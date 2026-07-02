@@ -1,0 +1,18 @@
+# Adapter: node-npm
+# Load when: target repo uses Node.js with npm or yarn.
+# Changes: scaffold uses package.json; ast-grep targets JS/TS workflow imports;
+#          effort atlas tags node topology separately from python topology.
+
+adapter_id: node-npm
+load_when: runtime == "node"
+changes:
+  offense_additions:
+    - rule: build_effort_atlas
+      addition: "Tag effort_atlas entries with runtime: node when finding location is .js/.ts/.json"
+  defense_additions:
+    - rule: scaffold_generator
+      addition: "Scaffold includes package.json, .github/workflows/ci.yml with npm ci, jest config"
+    - rule: corpus_to_astgrep
+      addition: "ast-grep rules target TypeScript/JavaScript (language: typescript | javascript)"
+  forbidden_moves:
+    - "Do not generate Python pyproject.toml scaffolds for pure Node repos"

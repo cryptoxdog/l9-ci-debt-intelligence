@@ -1,0 +1,22 @@
+# Adapter: polyglot-monorepo
+# Load when: target repo contains both Python and TypeScript/JavaScript workspaces.
+# Changes: scaffold includes both pyproject.toml and package.json;
+#          ast-grep rules generated for both Python and TypeScript;
+#          effort atlas segments by language.
+
+adapter_id: polyglot-monorepo
+load_when: repo_type == "polyglot-monorepo"
+changes:
+  offense_additions:
+    - rule: build_effort_atlas
+      addition: "Segment effort_atlas by language (python | typescript | yaml)"
+  defense_additions:
+    - rule: scaffold_generator
+      addition: "Scaffold includes pyproject.toml + package.json + shared .github/workflows/ci.yml"
+    - rule: corpus_to_astgrep
+      addition: "Generate rule sets for python, typescript, and yaml languages separately"
+    - rule: copilot_instructions_generator
+      addition: "Generate language-tagged instruction blocks: <!-- lang: python --> and <!-- lang: typescript -->"
+  forbidden_moves:
+    - "Do not merge Python and TypeScript ast-grep rules into a single file"
+    - "Do not generate a single scaffold that assumes one language"

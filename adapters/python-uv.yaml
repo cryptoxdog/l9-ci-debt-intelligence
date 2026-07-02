@@ -1,0 +1,19 @@
+# Adapter: python-uv
+# Load when: target repo uses uv as its Python package manager.
+# Changes: scaffold pyproject.toml uses uv-compatible format;
+#          ast-grep rules target pyproject.toml [project.dependencies] section;
+#          Copilot instructions include uv-specific install patterns.
+
+adapter_id: python-uv
+load_when: python_package_manager == "uv"
+changes:
+  defense_additions:
+    - rule: scaffold_generator
+      addition: "pyproject.toml uses [project] table with [project.dependencies] list (PEP 621)"
+    - rule: corpus_to_astgrep
+      addition: "ast-grep rules for CI-DEPS-001 target pyproject.toml [project.dependencies] array"
+    - rule: copilot_instructions_generator
+      addition: "Include uv add <package> as the canonical install command in CI-DEPS-001 instruction"
+  forbidden_moves:
+    - "Do not generate setup.py or requirements.txt scaffolds for uv repos"
+    - "Do not use pip install in scaffold ci.yml when uv is the package manager"

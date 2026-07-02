@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/cryptoxdog/l9-ci-debt-intelligence/schemas/corpus.schema.json",
+  "title": "CI Debt Finding",
+  "description": "One finding record from the l9-ci-debt-resolver JSONL corpus",
+  "type": "object",
+  "required": ["pr", "finding_id", "classification", "description"],
+  "properties": {
+    "pr":            { "type": "integer", "minimum": 1 },
+    "cycle":         { "type": "integer", "minimum": 1 },
+    "finding_id":    { "type": "string", "minLength": 3 },
+    "source":        { "type": "string", "enum": ["gha_log", "coderabbit_inline", "coderabbit_walkthrough", "manual"] },
+    "severity":      { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+    "classification":{ "type": "string", "enum": ["valid_current", "unknown", "doctrine_reject", "out_of_scope"] },
+    "location":      { "type": "string" },
+    "description":   { "type": "string", "minLength": 5 },
+    "action":        { "type": "string", "enum": ["patch", "not_patched"] },
+    "rule_id":       { "type": ["string", "null"] },
+    "topology":      { "type": ["string", "null"], "enum": ["gha_workflow", "python_deps", "api_drift", "test_isolation", "doctrine_violation", "semantic_tolerance", "unclassified", null] },
+    "resolved":      { "type": "boolean" },
+    "commit_sha":    { "type": ["string", "null"] }
+  },
+  "additionalProperties": false
+}

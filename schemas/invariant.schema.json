@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/cryptoxdog/l9-ci-debt-intelligence/schemas/invariant.schema.json",
+  "title": "Generated Invariants",
+  "description": "Corpus-derived invariants for injection into resolver doctrine",
+  "type": "object",
+  "required": ["generated_at", "source", "invariants"],
+  "properties": {
+    "generated_at": { "type": "string", "format": "date-time" },
+    "source":       { "type": "string", "enum": ["corpus", "fixture"] },
+    "leverage_score": { "type": ["number", "string"] },
+    "invariants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "condition", "invariant_statement", "evidence_count", "confidence"],
+        "properties": {
+          "rule_id":             { "type": "string" },
+          "topology":            { "type": ["string", "null"] },
+          "condition":           { "type": "string", "minLength": 5 },
+          "invariant_statement": { "type": "string", "minLength": 10 },
+          "evidence_count":      { "type": "integer", "minimum": 0 },
+          "confidence":          { "type": "string", "enum": ["high", "medium", "low", "Unknown"] }
+        }
+      }
+    }
+  }
+}
