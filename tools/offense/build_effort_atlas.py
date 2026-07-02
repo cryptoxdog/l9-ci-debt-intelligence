@@ -1,75 +1,58 @@
-#!/usr/bin/env python3
-"""Build effort atlas: per-rule effort cost from corpus."""
+"""Build an effort atlas: per finding_id, count occurrences and estimate remediation effort."""
 from __future__ import annotations
+
 import json
-import sys
-from collections import defaultdict
-from datetime import datetime, timezone
+from collections import Counter
 from pathlib import Path
 
+import typer
 
-def main() -> int:
-    corpus_path = Path("outputs/corpus/unified_findings.jsonl")
-    output_path = Path("outputs/offense/effort_atlas.json")
+app = typer.Typer()
 
-    if not corpus_path.exists():
-        print("ERROR: corpus not found", file=sys.stderr)
-        return 1
+# Effort heuristic: number of files typically touched per finding class
+_EFFORT_HEURISTIC: dict[str, str] = {
+    "CI-IMPORT": "single-job-env-var",
+    "CI-DEPS": "pyproject-or-workflow-step",
+    "API-DRIFT": "single-module-extend",
+    "DOCTRINE": "multi-file-rewrite",
+}
 
-    records = [json.loads(l) for l in corpus_path.read_text(encoding="utf-8").splitlines() if l.strip()]
-    valid = [r for r in records if r.get("classification") == "valid_current"]
 
-    # Aggregate per rule_id
-    rule_data: dict[str, dict] = defaultdict(lambda: {
-        "rule_id": None, "topology": None, "occurrence_count": 0,
-        "prs": set(), "cycles": [], "doctrine_reject_count": 0
-    })
+@app.command()
+def build(
+    corpus_jsonl: Path = typer.Argument(Path("outputs/corpus/unified_findings.jsonl")),
+    output_path: Path = typer.Option(Path("outputs/offense/effort_atlas.json")),
+) -> None:
+    counter: Counter[str] = Counter()
+    severity_map: dict[str, list[str]] = {}
+    pr_map: dict[str, set[int]] = {}
 
-    for rec in records:
-        rid = rec.get("rule_id") or "unclassified"
-        rule_data[rid]["rule_id"] = rid
-        rule_data[rid]["topology"] = rec.get("topology")
-        if rec.get("classification") == "valid_current":
-            rule_data[rid]["occurrence_count"] += 1
-            rule_data[rid]["prs"].add(rec["pr"])
-        if rec.get("classification") == "doctrine_reject":
-            rule_data[rid]["doctrine_reject_count"] += 1
-        if rec.get("cycle"):
-            rule_data[rid]["cycles"].append(rec["cycle"])
+    for raw in corpus_jsonl.read_text().splitlines():
+        raw = raw.strip()
+        if not raw:
+            continue
+        r = json.loads(raw)
+        fid = r.get("finding_id", "")
+        if not fid:
+            continue
+        counter[fid] += 1
+        severity_map.setdefault(fid, []).append(r.get("severity", "unknown"))
+        pr_map.setdefault(fid, set()).add(r.get("pr", 0))
 
-    atlas_rules = []
-    for rid, d in rule_data.items():
-        avg_cycles = round(sum(d["cycles"]) / len(d["cycles"]), 2) if d["cycles"] else "Unknown"
-        effort_score = (
-            d["occurrence_count"] * avg_cycles
-            if isinstance(avg_cycles, (int, float)) else "Unknown"
-        )
-        atlas_rules.append({
-            "rule_id": rid,
-            "topology": d["topology"],
-            "occurrence_count": d["occurrence_count"],
-            "avg_cycles_to_fix": avg_cycles,
-            "avg_gate_failures": "Unknown",
-            "prs_affected": len(d["prs"]),
-            "effort_score": effort_score,
-            "doctrine_reject_count": d["doctrine_reject_count"],
-        })
-
-    atlas_rules.sort(key=lambda x: (x["effort_score"] if isinstance(x["effort_score"], (int, float)) else -1), reverse=True)
-
-    output = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "source": "corpus",
-        "corpus_size": len(valid),
-        "leverage_score": 4.4,
-        "rules": atlas_rules,
-    }
+    atlas = {}
+    for fid, count in counter.most_common():
+        prefix = "-".join(fid.split("-")[:2])
+        atlas[fid] = {
+            "occurrences": count,
+            "pr_count": len(pr_map.get(fid, set())),
+            "severities": list(set(severity_map.get(fid, []))),
+            "effort_class": _EFFORT_HEURISTIC.get(prefix, "unknown"),
+        }
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(output, indent=2), encoding="utf-8")
-    print(f"OK: effort atlas written ({len(atlas_rules)} rule_ids)")
-    return 0
+    output_path.write_text(json.dumps(atlas, indent=2))
+    typer.echo(f"Effort atlas ({len(atlas)} findings) → {output_path}")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    app()

@@ -1,32 +1,54 @@
-#!/usr/bin/env python3
-"""Export a .pre-commit-config.yaml bundle from generated ast-grep rules."""
+"""Export a .pre-commit-config.yaml fragment including the ast-grep pack."""
 from __future__ import annotations
-import sys
+
 from pathlib import Path
 
+import typer
+import yaml
 
-def main() -> int:
-    rules_dir = Path("outputs/defense/astgrep/rules")
-    output_path = Path("outputs/packages/pre-commit-config.yaml")
+app = typer.Typer()
 
-    rules = sorted(rules_dir.glob("*.yaml")) if rules_dir.exists() else []
-    if not rules:
-        print("WARN: no ast-grep rules found. Run corpus_to_astgrep.py first.")
-        return 0
+
+@app.command()
+def export(
+    output_path: Path = typer.Option(Path("outputs/defense/scaffolds/python-gha/.pre-commit-config.yaml")),
+    astgrep_rules_dir: str = typer.Option("outputs/defense/astgrep/rules"),
+) -> None:
+    config = {
+        "repos": [
+            {
+                "repo": "https://github.com/astral-sh/ruff-pre-commit",
+                "rev": "v0.4.10",
+                "hooks": [{"id": "ruff", "args": ["--fix"]}, {"id": "ruff-format"}],
+            },
+            {
+                "repo": "https://github.com/pre-commit/pre-commit-hooks",
+                "rev": "v4.6.0",
+                "hooks": [
+                    {"id": "check-yaml"},
+                    {"id": "check-json"},
+                    {"id": "end-of-file-fixer"},
+                    {"id": "trailing-whitespace"},
+                ],
+            },
+            {
+                "repo": "local",
+                "hooks": [{
+                    "id": "ast-grep-ci-debt",
+                    "name": "ast-grep CI-debt rules",
+                    "language": "system",
+                    "entry": f"ast-grep scan --config {astgrep_rules_dir}",
+                    "types": ["python", "yaml", "toml"],
+                    "pass_filenames": False,
+                }],
+            },
+        ]
+    }
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    lines = [
-        "repos:",
-        "  - repo: https://github.com/ast-grep/ast-grep",
-        "    rev: v0.26.0",
-        "    hooks:",
-        "      - id: ast-grep",
-        "        args: ['--config', 'outputs/defense/astgrep/sgconfig.yml']",
-    ]
-    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"OK: pre-commit config exported ({len(rules)} rules referenced)")
-    return 0
+    output_path.write_text(yaml.dump(config, sort_keys=False, allow_unicode=True))
+    typer.echo(f"Pre-commit config → {output_path}")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    app()

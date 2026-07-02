@@ -1,33 +1,32 @@
-#!/usr/bin/env python3
-"""Package ast-grep rules + sgconfig into a distributable zip."""
+"""Bundle ast-grep rules into a publishable pack directory."""
 from __future__ import annotations
-import sys
-import zipfile
-from datetime import datetime, timezone
+
+import shutil
 from pathlib import Path
 
+import typer
 
-def main() -> int:
-    astgrep_dir = Path("outputs/defense/astgrep")
-    output_path = Path("outputs/packages/astgrep-pack.zip")
+app = typer.Typer()
 
-    if not astgrep_dir.exists():
-        print("ERROR: astgrep output dir not found. Run corpus_to_astgrep.py first.", file=sys.stderr)
-        return 1
 
-    files = list(astgrep_dir.rglob("*.yaml")) + list(astgrep_dir.rglob("*.yml"))
-    if not files:
-        print("WARN: no rule files found in astgrep output dir")
-        return 0
+@app.command()
+def export(
+    rules_dir: Path = typer.Option(Path("outputs/defense/astgrep/rules")),
+    sgconfig: Path = typer.Option(Path("outputs/defense/astgrep/sgconfig.yml")),
+    output_dir: Path = typer.Option(Path("dist/astgrep-pack")),
+) -> None:
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True)
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        for f in files:
-            zf.write(f, f.relative_to(astgrep_dir))
+    if rules_dir.exists():
+        shutil.copytree(rules_dir, output_dir / "rules")
+    if sgconfig.exists():
+        shutil.copy(sgconfig, output_dir / "sgconfig.yml")
 
-    print(f"OK: astgrep-pack.zip created ({len(files)} files, {output_path.stat().st_size} bytes)")
-    return 0
+    rule_count = len(list((output_dir / "rules").glob("*.yaml"))) if (output_dir / "rules").exists() else 0
+    typer.echo(f"ast-grep pack ({rule_count} rules) → {output_dir}")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    app()

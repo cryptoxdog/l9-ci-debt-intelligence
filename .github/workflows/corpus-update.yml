@@ -1,0 +1,68 @@
+name: corpus-update
+
+on:
+  workflow_dispatch:
+    inputs:
+      findings_artifact_url:
+        description: "URL to PR_REMEDIATION_FINDINGS.jsonl artifact from resolver run"
+        required: false
+  repository_dispatch:
+    types: [resolver-run-complete]
+
+jobs:
+  ingest-and-normalize:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install jsonschema pydantic pyyaml rich typer
+
+      - name: Download findings artifact
+        if: ${{ github.event.inputs.findings_artifact_url != '' }}
+        run: |
+          curl -fsSL "${{ github.event.inputs.findings_artifact_url }}" \
+            -o /tmp/PR_REMEDIATION_FINDINGS.jsonl
+
+      - name: Ingest findings
+        run: |
+          python tools/corpus/ingest_findings.py \
+            /tmp/PR_REMEDIATION_FINDINGS.jsonl \
+            --output-dir outputs/corpus
+
+      - name: Normalize corpus
+        run: python tools/corpus/normalize_corpus.py
+
+      - name: Validate corpus
+        run: python tools/corpus/validate_corpus.py --strict
+
+      - name: Build offense artifacts
+        run: |
+          python tools/offense/build_cooccurrence_matrix.py
+          python tools/offense/build_effort_atlas.py
+          python tools/offense/corpus_to_invariants.py
+          python tools/offense/few_shot_loader.py
+          python tools/offense/sbom_from_findings.py
+
+      - name: Build defense artifacts
+        run: |
+          python tools/defense/copilot_instructions_generator.py
+          python tools/defense/corpus_to_astgrep.py
+          python tools/defense/checklist_library_builder.py
+
+      - name: Validate all outputs
+        run: python tools/validation/validate_outputs.py --strict
+
+      - name: Upload corpus artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: intelligence-outputs-${{ github.run_id }}
+          path: outputs/
+          retention-days: 30

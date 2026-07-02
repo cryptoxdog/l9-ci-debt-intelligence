@@ -1,0 +1,58 @@
+name: validate-intelligence-outputs
+
+on:
+  pull_request:
+    paths:
+      - "tools/**"
+      - "schemas/**"
+      - "references/**"
+      - "adapters/**"
+  push:
+    branches: [main]
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install jsonschema pydantic pyyaml rich typer ruff pytest pytest-cov
+
+      - name: Ruff lint
+        run: ruff check tools/
+
+      - name: Compile check
+        run: python -m compileall tools/
+
+      - name: Validate schemas are valid JSON
+        run: |
+          python -c "
+import json, glob, sys
+errors = []
+for f in glob.glob('schemas/*.json'):
+    try:
+        json.load(open(f))
+    except Exception as e:
+        errors.append(f'{f}: {e}')
+if errors:
+    [print(e) for e in errors]
+    sys.exit(1)
+print(f'All {len(glob.glob(\"schemas/*.json\"))} schemas valid JSON')
+"
+
+      - name: Validate workflow YAML
+        run: |
+          python -c "
+import yaml, glob, sys
+for f in glob.glob('.github/workflows/*.yml'):
+    yaml.safe_load(open(f))
+print('All workflow YAMLs valid')
+"

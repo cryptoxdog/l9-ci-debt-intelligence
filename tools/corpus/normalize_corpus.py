@@ -1,81 +1,60 @@
-#!/usr/bin/env python3
-"""Normalize corpus: fill missing topology, compute topology_summary.json."""
+"""Normalize unified_findings.jsonl: deduplicate, sort, enrich with topology tags."""
 from __future__ import annotations
+
 import json
-import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
-TOPOLOGY_CLASSES = [
-    "gha_workflow", "python_deps", "api_drift", "test_isolation",
-    "doctrine_violation", "semantic_tolerance", "unclassified"
-]
+import typer
+import yaml
 
-RULE_TO_TOPOLOGY = {
-    "CI-IMPORT-001": "gha_workflow",
-    "CI-DEPS-001": "python_deps",
-    "API-DRIFT-001": "api_drift",
-    "CI-DEPS-002": "gha_workflow",
+app = typer.Typer()
+
+TOPOLOGY_PATH = Path(__file__).parents[2] / "references" / "topology-taxonomy.md"
+
+# Minimal topology tag map; extended by adapters at runtime
+_TOPOLOGY_MAP: dict[str, list[str]] = {
+    "CI-IMPORT": ["gha", "python", "env"],
+    "CI-DEPS": ["gha", "python", "dependencies"],
+    "API-DRIFT": ["python", "schema", "api"],
+    "DOCTRINE": ["wire-format", "transport"],
 }
 
 
-def infer_topology(rec: dict) -> str:
-    rule_id = rec.get("rule_id")
-    if rule_id and rule_id in RULE_TO_TOPOLOGY:
-        return RULE_TO_TOPOLOGY[rule_id]
-    cls = rec.get("classification", "")
-    if cls == "doctrine_reject":
-        return "doctrine_violation"
-    return "unclassified"
+def _topology_tags(finding_id: str) -> list[str]:
+    prefix = finding_id.split("-")[0] + "-" + finding_id.split("-")[1] if "-" in finding_id else finding_id
+    for key, tags in _TOPOLOGY_MAP.items():
+        if finding_id.startswith(key):
+            return tags
+    return ["unknown"]
 
 
-def main() -> int:
-    if len(sys.argv) < 2:
-        print("Usage: normalize_corpus.py --corpus <path>", file=sys.stderr)
-        return 1
+@app.command()
+def normalize(
+    corpus_jsonl: Path = typer.Argument(Path("outputs/corpus/unified_findings.jsonl")),
+    output_path: Path = typer.Option(Path("outputs/corpus/unified_findings.jsonl")),
+) -> None:
+    """Deduplicate, sort by PR then finding_id, enrich with topology tags."""
+    records: dict[str, dict] = {}
 
-    corpus_path = Path(sys.argv[sys.argv.index("--corpus") + 1]) if "--corpus" in sys.argv else None
-    if not corpus_path or not corpus_path.exists():
-        print("ERROR: corpus file not found", file=sys.stderr)
-        return 1
+    for raw in corpus_jsonl.read_text().splitlines():
+        raw = raw.strip()
+        if not raw:
+            continue
+        r = json.loads(raw)
+        key = f"{r.get('pr')}:{r.get('finding_id')}"
+        if key not in records:
+            r.setdefault("topology_tags", _topology_tags(r.get("finding_id", "")))
+            records[key] = r
 
-    records = [json.loads(l) for l in corpus_path.read_text(encoding="utf-8").splitlines() if l.strip()]
+    sorted_records = sorted(records.values(), key=lambda r: (r.get("pr", 0), r.get("finding_id", "")))
 
-    normalized = []
-    for rec in records:
-        if not rec.get("topology"):
-            rec["topology"] = infer_topology(rec)
-        normalized.append(rec)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w") as fh:
+        for r in sorted_records:
+            fh.write(json.dumps(r) + "\n")
 
-    # Rewrite corpus
-    with corpus_path.open("w", encoding="utf-8") as fh:
-        for rec in normalized:
-            fh.write(json.dumps(rec) + "\n")
-
-    # Write topology_summary.json
-    summary: dict[str, int] = {t: 0 for t in TOPOLOGY_CLASSES}
-    for rec in normalized:
-        t = rec.get("topology", "unclassified")
-        summary[t] = summary.get(t, 0) + 1
-
-    active_with_findings = sum(1 for t in TOPOLOGY_CLASSES if summary.get(t, 0) > 0)
-    coverage = active_with_findings / len(TOPOLOGY_CLASSES)
-
-    topology_summary = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "total_records": len(normalized),
-        "topology_counts": summary,
-        "coverage_pct": round(coverage * 100, 1),
-        "coverage_warning": coverage < 0.80,
-    }
-    out_path = corpus_path.parent / "topology_summary.json"
-    out_path.write_text(json.dumps(topology_summary, indent=2), encoding="utf-8")
-
-    print(f"OK: normalized {len(normalized)} records. Coverage: {coverage:.0%}")
-    if coverage < 0.80:
-        print(f"WARN: topology coverage {coverage:.0%} < 80%")
-    return 0
+    typer.echo(f"Normalized {len(sorted_records)} unique records → {output_path}")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    app()

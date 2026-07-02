@@ -1,58 +1,44 @@
-#!/usr/bin/env python3
-"""Build co-occurrence matrix of rule_ids across PR findings."""
+"""Build a co-occurrence matrix of finding_ids that appear in the same PR."""
 from __future__ import annotations
+
 import json
-import sys
 from collections import defaultdict
-from datetime import datetime, timezone
+from itertools import combinations
 from pathlib import Path
 
-MIN_CORPUS_SIZE = 10
+import typer
+
+app = typer.Typer()
 
 
-def main() -> int:
-    corpus_path = Path("outputs/corpus/unified_findings.jsonl")
-    output_path = Path("outputs/offense/cooccurrence_matrix.json")
+@app.command()
+def build(
+    corpus_jsonl: Path = typer.Argument(Path("outputs/corpus/unified_findings.jsonl")),
+    output_path: Path = typer.Option(Path("outputs/offense/cooccurrence_matrix.json")),
+) -> None:
+    """For each pair of finding_ids that co-occur in the same PR, count frequency."""
+    pr_findings: dict[str, list[str]] = defaultdict(list)
 
-    if not corpus_path.exists():
-        print("ERROR: corpus not found. Run ingest_findings.py first.", file=sys.stderr)
-        return 1
+    for raw in corpus_jsonl.read_text().splitlines():
+        raw = raw.strip()
+        if not raw:
+            continue
+        r = json.loads(raw)
+        pr_key = f"{r.get('source_repo', 'default')}:{r.get('pr')}"
+        fid = r.get("finding_id", "")
+        if fid and r.get("classification") == "valid_current":
+            pr_findings[pr_key].append(fid)
 
-    records = [json.loads(l) for l in corpus_path.read_text(encoding="utf-8").splitlines() if l.strip()]
-    valid = [r for r in records if r.get("classification") == "valid_current" and r.get("rule_id")]
-
-    if len(valid) < MIN_CORPUS_SIZE:
-        print(f"WARN: corpus_too_small ({len(valid)} valid_current findings < {MIN_CORPUS_SIZE}). Skipping matrix.")
-        return 0
-
-    # Group rule_ids by PR
-    pr_rules: dict[int, set] = defaultdict(set)
-    for rec in valid:
-        pr_rules[rec["pr"]].add(rec["rule_id"])
-
-    # Build co-occurrence counts
-    cooccur: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
-    for rules in pr_rules.values():
-        rules_list = sorted(rules)
-        for i, r1 in enumerate(rules_list):
-            for r2 in rules_list[i:]:
-                cooccur[r1][r2] += 1
-                if r1 != r2:
-                    cooccur[r2][r1] += 1
-
-    output = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "source": "corpus",
-        "pr_count": len(pr_rules),
-        "leverage_score": 4.2,
-        "matrix": {k: dict(v) for k, v in cooccur.items()},
-    }
+    matrix: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for findings in pr_findings.values():
+        for a, b in combinations(sorted(set(findings)), 2):
+            matrix[a][b] += 1
+            matrix[b][a] += 1
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(output, indent=2), encoding="utf-8")
-    print(f"OK: co-occurrence matrix written ({len(cooccur)} rule_ids across {len(pr_rules)} PRs)")
-    return 0
+    output_path.write_text(json.dumps({k: dict(v) for k, v in matrix.items()}, indent=2))
+    typer.echo(f"Co-occurrence matrix ({len(matrix)} nodes) → {output_path}")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    app()

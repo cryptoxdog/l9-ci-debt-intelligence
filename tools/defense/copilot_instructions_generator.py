@@ -1,87 +1,55 @@
-#!/usr/bin/env python3
-"""Generate copilot-instructions.md from corpus invariants."""
+"""Generate .github/copilot-instructions.md from corpus invariants and effort atlas."""
 from __future__ import annotations
-import sys
-from datetime import datetime, timezone
+
+import json
 from pathlib import Path
 
-try:
-    import yaml
-except ImportError:
-    print("ERROR: pyyaml not installed", file=sys.stderr)
-    sys.exit(1)
+import typer
+import yaml
+
+app = typer.Typer()
 
 
-INSTRUCTION_TEMPLATES = {
-    "CI-IMPORT-001": (
-        "Every GitHub Actions job that imports project Python modules MUST set "
-        "`env: PYTHONPATH: ${{ github.workspace }}` at the job level.",
-        "BAD: job with python -m mymodule but no PYTHONPATH env set.",
-        "GOOD: env:\n  PYTHONPATH: ${{ github.workspace }}\nsteps:\n  - run: python -m mymodule",
-    ),
-    "CI-DEPS-001": (
-        "pydantic>=2.0 MUST be listed in [project.dependencies] in pyproject.toml.",
-        "BAD: import pydantic in source but no pydantic entry in pyproject.toml.",
-        "GOOD: [project.dependencies] = [\"pydantic>=2.0\"]",
-    ),
-    "API-DRIFT-001": (
-        "tools/review/report.py MUST define SuggestedTest dataclass, repro_steps and "
-        "suggested_tests fields, and a load_json_report() function.",
-        "BAD: report.py missing SuggestedTest or load_json_report.",
-        "GOOD: @dataclass class SuggestedTest: ... def load_json_report(path): ...",
-    ),
-    "CI-DEPS-002": (
-        "Every GHA job that calls Python scripts MUST include an Install deps step.",
-        "BAD: Final Decision job calls python script with no prior pip install step.",
-        "GOOD: - name: Install deps\n  run: pip install pyyaml jsonschema",
-    ),
-}
+@app.command()
+def generate(
+    invariants_yaml: Path = typer.Option(Path("outputs/offense/generated_invariants.yaml")),
+    effort_atlas: Path = typer.Option(Path("outputs/offense/effort_atlas.json")),
+    output_path: Path = typer.Option(Path("outputs/defense/copilot/copilot-instructions.md")),
+) -> None:
+    data = yaml.safe_load(invariants_yaml.read_text())
+    atlas = json.loads(effort_atlas.read_text()) if effort_atlas.exists() else {}
+    invariants = data.get("invariants", [])
 
-
-def main() -> int:
-    invariants_path = Path("outputs/offense/generated_invariants.yaml")
-    output_path = Path("outputs/defense/copilot/copilot-instructions.md")
-
-    if not invariants_path.exists():
-        print("ERROR: generated_invariants.yaml not found. Run corpus_to_invariants.py first.", file=sys.stderr)
-        return 1
-
-    data = yaml.safe_load(invariants_path.read_text(encoding="utf-8"))
-    invariants = [i for i in data.get("invariants", []) if i.get("confidence") in {"high", "medium"}]
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
-        "---",
-        "# GitHub Copilot Instructions",
-        f"# Generated: {datetime.now(timezone.utc).isoformat()}",
-        f"# Source: l9-ci-debt-intelligence corpus",
-        f"# Total instructions: {len(invariants)}",
-        "---",
+        "# Copilot Instructions — L9 CI-Debt Prevention",
         "",
-        "You are helping with a Python/TypeScript project that uses GitHub Actions.",
-        "Follow these rules strictly:",
+        "_Auto-generated. Do not edit manually. Re-run `copilot_instructions_generator.py` to update._",
+        "",
+        "## Hard Rules (violations block the PR)",
         "",
     ]
+
     for inv in invariants:
-        rid = inv["rule_id"]
-        tpl = INSTRUCTION_TEMPLATES.get(rid)
-        if tpl:
-            instruction, neg, pos = tpl
-        else:
-            instruction = inv["invariant_statement"]
-            neg, pos = None, None
-        lines.append(f"## {rid} ({inv['topology']})")
-        lines.append(f"{instruction}")
-        if neg:
-            lines.append(f"\n**Avoid:** {neg}")
-        if pos:
-            lines.append(f"\n**Do:** {pos}")
+        atlas_entry = atlas.get(inv["id"], {})
+        effort = atlas_entry.get("effort_class", inv.get("effort_class", "unknown"))
+        lines.append(f"- **{inv['id']}**: {inv['description']}")
+        lines.append(f"  Effort class: `{effort}` | Gate: {inv['gate']}")
         lines.append("")
 
-    output_path.write_text("\n".join(lines), encoding="utf-8")
-    print(f"OK: copilot-instructions.md written ({len(invariants)} instructions)")
-    return 0
+    lines += [
+        "## Workflow Contract",
+        "",
+        "- Every GHA job that runs Python must set `env: PYTHONPATH: ${{ github.workspace }}` (CI-IMPORT-001)",
+        "- Every dependency used at runtime must appear in `pyproject.toml [project.dependencies]` (CI-DEPS-001)",
+        "- Final Decision / aggregate jobs must include an `Install deps` step (CI-DEPS-002)",
+        "- Do not use `PacketEnvelope` as an active transport type — use `TransportPacket` only (DOCTRINE)",
+        "",
+    ]
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines))
+    typer.echo(f"Copilot instructions ({len(invariants)} rules) → {output_path}")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    app()

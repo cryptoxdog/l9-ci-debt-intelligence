@@ -1,45 +1,45 @@
-#!/usr/bin/env python3
-"""Merge multiple resolver corpus runs into a single unified_findings.jsonl."""
+"""Merge findings JSONL files from multiple resolver runs / repos into one corpus."""
 from __future__ import annotations
+
 import json
-import sys
 from pathlib import Path
 
+import typer
 
-def main() -> int:
-    if "--inputs" not in sys.argv or "--output" not in sys.argv:
-        print("Usage: merge_repo_runs.py --inputs <dir1> [dir2 ...] --output <file>", file=sys.stderr)
-        return 1
+app = typer.Typer()
 
-    idx_inputs = sys.argv.index("--inputs") + 1
-    idx_output = sys.argv.index("--output")
-    input_dirs = sys.argv[idx_inputs:idx_output]
-    output_file = Path(sys.argv[idx_output + 1])
 
-    merged: dict[str, dict] = {}
-    for d in input_dirs:
-        for f in sorted(Path(d).rglob("unified_findings.jsonl")):
-            for line in f.read_text(encoding="utf-8").splitlines():
-                line = line.strip()
-                if not line:
-                    continue
-                rec = json.loads(line)
-                fid = rec.get("finding_id")
-                if fid:
-                    merged[fid] = rec
+@app.command()
+def merge(
+    inputs: list[Path] = typer.Argument(..., help="Two or more findings JSONL files to merge"),
+    output_path: Path = typer.Option(Path("outputs/corpus/unified_findings.jsonl")),
+    deduplicate: bool = typer.Option(True),
+) -> None:
+    """Concatenate multiple findings JSONL files, optionally deduplicating by (repo, pr, finding_id)."""
+    seen: set[str] = set()
+    merged: list[dict] = []
 
-    if not merged:
-        print("ERROR: no findings found across input directories", file=sys.stderr)
-        return 1
+    for path in inputs:
+        repo_tag = path.stem
+        for raw in path.read_text().splitlines():
+            raw = raw.strip()
+            if not raw:
+                continue
+            r = json.loads(raw)
+            r.setdefault("source_repo", repo_tag)
+            key = f"{r.get('source_repo')}:{r.get('pr')}:{r.get('finding_id')}"
+            if deduplicate and key in seen:
+                continue
+            seen.add(key)
+            merged.append(r)
 
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-    with output_file.open("w", encoding="utf-8") as fh:
-        for rec in merged.values():
-            fh.write(json.dumps(rec) + "\n")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w") as fh:
+        for r in merged:
+            fh.write(json.dumps(r) + "\n")
 
-    print(f"OK: merged {len(merged)} unique findings into {output_file}")
-    return 0
+    typer.echo(f"Merged {len(merged)} records from {len(inputs)} files → {output_path}")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    app()

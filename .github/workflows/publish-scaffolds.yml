@@ -1,0 +1,38 @@
+name: publish-scaffolds
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "outputs/defense/scaffolds/**"
+      - "adapters/**"
+  workflow_dispatch:
+
+jobs:
+  package-scaffolds:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install pyyaml typer
+
+      - name: Export copilot bundle
+        run: python tools/packaging/export_copilot_bundle.py
+
+      - name: Export scaffolds
+        run: python tools/packaging/export_scaffolds.py
+
+      - name: Upload scaffolds artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scaffolds-${{ github.run_id }}
+          path: dist/
+          retention-days: 90

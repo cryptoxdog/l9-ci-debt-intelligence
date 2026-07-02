@@ -1,29 +1,32 @@
-#!/usr/bin/env python3
-"""Package Copilot instructions + checklist library into a distributable bundle."""
+"""Bundle copilot-instructions.md + checklist_library.yaml into a dist/copilot-bundle."""
 from __future__ import annotations
-import sys
-import zipfile
+
+import shutil
 from pathlib import Path
 
+import typer
 
-def main() -> int:
-    copilot_file = Path("outputs/defense/copilot/copilot-instructions.md")
-    checklist_file = Path("outputs/defense/pr-checklists/checklist_library.yaml")
-    output_path = Path("outputs/packages/copilot-bundle.zip")
+app = typer.Typer()
 
-    if not copilot_file.exists():
-        print("ERROR: copilot-instructions.md not found. Run copilot_instructions_generator.py first.", file=sys.stderr)
-        return 1
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.write(copilot_file, "copilot-instructions.md")
-        if checklist_file.exists():
-            zf.write(checklist_file, "checklist_library.yaml")
+@app.command()
+def export(
+    copilot_md: Path = typer.Option(Path("outputs/defense/copilot/copilot-instructions.md")),
+    checklist_yaml: Path = typer.Option(Path("outputs/defense/pr-checklists/checklist_library.yaml")),
+    output_dir: Path = typer.Option(Path("dist/copilot-bundle")),
+) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    copied: list[str] = []
 
-    print(f"OK: copilot-bundle.zip created ({output_path.stat().st_size} bytes)")
-    return 0
+    for src in [copilot_md, checklist_yaml]:
+        if src.exists():
+            shutil.copy(src, output_dir / src.name)
+            copied.append(src.name)
+        else:
+            typer.echo(f"WARN: {src} not found — skipped", err=True)
+
+    typer.echo(f"Copilot bundle ({', '.join(copied)}) → {output_dir}")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    app()

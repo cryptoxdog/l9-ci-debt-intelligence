@@ -1,64 +1,38 @@
-#!/usr/bin/env python3
-"""Build PR checklist library keyed by topology class."""
+"""Build a per-topology PR checklist library from corpus invariants."""
 from __future__ import annotations
+
 import json
-import sys
-from datetime import datetime, timezone
+from collections import defaultdict
 from pathlib import Path
 
-try:
-    import yaml
-except ImportError:
-    print("ERROR: pyyaml not installed", file=sys.stderr)
-    sys.exit(1)
+import typer
+import yaml
+
+app = typer.Typer()
 
 
-CHECKLIST_ITEMS = {
-    "universal": [
-        "[ ] All GHA jobs that import Python modules have PYTHONPATH set (CI-IMPORT-001)",
-        "[ ] All required packages are in [project.dependencies] in pyproject.toml (CI-DEPS-001)",
-        "[ ] Every GHA job calling Python has an Install deps step (CI-DEPS-002)",
-        "[ ] No PacketEnvelope active transport references in changed files",
-        "[ ] Ruff lint passes on all changed Python files",
-        "[ ] All changed workflow YAML files are valid YAML",
-    ],
-    "gha_workflow": [
-        "[ ] Verify PYTHONPATH env is set at job level for all Python-running jobs (CI-IMPORT-001)",
-        "[ ] Final Decision job has Install deps step (CI-DEPS-002)",
-        "[ ] workflow_dispatch inputs are validated",
-    ],
-    "python_deps": [
-        "[ ] pydantic>=2.0 present in [project.dependencies] (CI-DEPS-001)",
-        "[ ] No runtime imports that are absent from pyproject.toml",
-        "[ ] Dev dependencies separated into [project.optional-dependencies]",
-    ],
-    "api_drift": [
-        "[ ] tools/review/report.py defines SuggestedTest dataclass (API-DRIFT-001)",
-        "[ ] tools/review/report.py defines repro_steps and suggested_tests fields",
-        "[ ] tools/review/report.py defines load_json_report() function",
-    ],
-    "doctrine_violation": [
-        "[ ] Zero PacketEnvelope active transport references in changed files",
-        "[ ] All wire format usage uses TransportPacket",
-        "[ ] ADR amendment filed if TransportPacket boundary is modified",
-    ],
-}
+@app.command()
+def build(
+    invariants_yaml: Path = typer.Option(Path("outputs/offense/generated_invariants.yaml")),
+    topology_summary: Path = typer.Option(Path("outputs/corpus/topology_summary.json")),
+    output_path: Path = typer.Option(Path("outputs/defense/pr-checklists/checklist_library.yaml")),
+) -> None:
+    data = yaml.safe_load(invariants_yaml.read_text()) if invariants_yaml.exists() else {"invariants": []}
+    invariants = data.get("invariants", [])
 
+    checklists: dict[str, list[str]] = defaultdict(list)
+    for inv in invariants:
+        for tag in inv.get("topology_tags", ["general"]):
+            checklists[tag].append(f"- [ ] {inv['id']}: {inv['description']}")
 
-def main() -> int:
-    output_path = Path("outputs/defense/pr-checklists/checklist_library.yaml")
+    checklists.setdefault("general", []).insert(0, "- [ ] All 4 local gates (compileall, ruff, pytest, yaml) pass")
+    checklists["general"].append("- [ ] No PacketEnvelope in active transport paths")
+    checklists["general"].append("- [ ] Tenant isolation test included if data-access layer touched")
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    library = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "source": "corpus + doctrine",
-        "leverage_score": 4.0,
-        "checklists": CHECKLIST_ITEMS,
-    }
-    output_path.write_text(yaml.dump(library, default_flow_style=False, allow_unicode=True), encoding="utf-8")
-    print(f"OK: checklist library written ({len(CHECKLIST_ITEMS)} topology blocks)")
-    return 0
+    output_path.write_text(yaml.dump(dict(checklists), sort_keys=True, allow_unicode=True))
+    typer.echo(f"Checklist library ({len(checklists)} topologies) → {output_path}")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    app()
