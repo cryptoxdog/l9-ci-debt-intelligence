@@ -1,0 +1,17 @@
+{
+  "generated_at": "2026-07-02T15:00:00Z",
+  "repos": [
+    {
+      "repo": "cryptoxdog/code-review",
+      "tenant_id": "cryptoxdog",
+      "ci_system": "github-actions",
+      "language": "python",
+      "findings_count": 8,
+      "valid_current": 7,
+      "doctrine_reject": 1,
+      "unknown": 0,
+      "source_sha": "e0dacd2",
+      "run_id": "fixture-initial"
+    }
+  ]
+}

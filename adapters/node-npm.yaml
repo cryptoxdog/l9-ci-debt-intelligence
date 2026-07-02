@@ -1,18 +1,73 @@
-# Adapter: node-npm
-# Load when: target repo uses Node.js with npm or yarn.
-# Changes: scaffold uses package.json; ast-grep targets JS/TS workflow imports;
-#          effort atlas tags node topology separately from python topology.
-
 adapter_id: node-npm
-load_when: runtime == "node"
+load_when: package_manager == "npm"
 changes:
-  offense_additions:
-    - rule: build_effort_atlas
-      addition: "Tag effort_atlas entries with runtime: node when finding location is .js/.ts/.json"
   defense_additions:
     - rule: scaffold_generator
-      addition: "Scaffold includes package.json, .github/workflows/ci.yml with npm ci, jest config"
+      addition: "package.json uses standard npm format with scripts block"
     - rule: corpus_to_astgrep
-      addition: "ast-grep rules target TypeScript/JavaScript (language: typescript | javascript)"
+      addition: "ast-grep rules for missing-dep pattern target package.json dependencies object"
+    - rule: copilot_instructions_generator
+      addition: "Include npm install <package> as the canonical install command"
   forbidden_moves:
-    - "Do not generate Python pyproject.toml scaffolds for pure Node repos"
+    - "Do not generate pyproject.toml scaffolds for node-only repos"
+    - "Do not use pip install in scaffold ci.yml for node repos"
+
+scaffold_files:
+  package.json: |
+    {
+      "name": "REPLACE_ME",
+      "version": "0.1.0",
+      "scripts": {
+        "build": "tsc",
+        "test": "jest",
+        "lint": "eslint src/ --ext .ts"
+      },
+      "dependencies": {},
+      "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "jest": "^29.0.0",
+        "ts-jest": "^29.0.0",
+        "eslint": "^8.0.0"
+      }
+    }
+  tsconfig.json: |
+    {
+      "compilerOptions": {
+        "target": "ES2022",
+        "module": "commonjs",
+        "outDir": "dist",
+        "rootDir": "src",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "declaration": true,
+        "sourceMap": true
+      },
+      "include": ["src/**/*"],
+      "exclude": ["node_modules", "dist"]
+    }
+  .github/workflows/ci.yml: |
+    name: CI
+    on:
+      push:
+        branches: [main]
+      pull_request:
+        branches: [main]
+    jobs:
+      build-and-test:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/setup-node@v4
+            with:
+              node-version: "20"
+              cache: "npm"
+          - name: Install deps
+            run: npm ci
+          - name: Lint
+            run: npm run lint
+          - name: Build
+            run: npm run build
+          - name: Test
+            run: npm test

@@ -1,9 +1,3 @@
-# Adapter: python-uv
-# Load when: target repo uses uv as its Python package manager.
-# Changes: scaffold pyproject.toml uses uv-compatible format;
-#          ast-grep rules target pyproject.toml [project.dependencies] section;
-#          Copilot instructions include uv-specific install patterns.
-
 adapter_id: python-uv
 load_when: python_package_manager == "uv"
 changes:
@@ -17,3 +11,61 @@ changes:
   forbidden_moves:
     - "Do not generate setup.py or requirements.txt scaffolds for uv repos"
     - "Do not use pip install in scaffold ci.yml when uv is the package manager"
+
+scaffold_files:
+  pyproject.toml: |
+    [project]
+    name = "REPLACE_ME"
+    version = "0.1.0"
+    requires-python = ">=3.11"
+    dependencies = [
+        "pydantic>=2.0",
+        "pyyaml",
+        "jsonschema",
+    ]
+
+    [project.optional-dependencies]
+    dev = ["pytest", "ruff", "mypy"]
+
+    [build-system]
+    requires = ["hatchling"]
+    build-backend = "hatchling.build"
+  .github/workflows/ci.yml: |
+    name: CI
+    on:
+      push:
+        branches: [main]
+      pull_request:
+        branches: [main]
+    jobs:
+      lint-and-test:
+        runs-on: ubuntu-latest
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        steps:
+          - uses: actions/checkout@v4
+          - uses: astral-sh/setup-uv@v4
+            with:
+              version: "latest"
+          - uses: actions/setup-python@v5
+            with:
+              python-version: "3.11"
+          - name: Install deps
+            run: uv sync --all-extras
+          - name: Compile check
+            run: python -m compileall . -q
+          - name: Lint
+            run: uv run ruff check .
+          - name: Test
+            run: uv run pytest -q
+  AGENTS.md: |
+    # AGENTS.md
+    ## Repo contract
+    - Python package manager: uv
+    - CI: GitHub Actions
+    - Gate A: python -m compileall . -q
+    - Gate B: uv run ruff check .
+    - Gate C: uv run pytest -q
+    - Gate D: validate workflow YAML
+    ## Forbidden
+    - No force-push, no gate weakening, no setup.py, no pip install in CI

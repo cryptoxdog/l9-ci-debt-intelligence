@@ -1,9 +1,3 @@
-# Adapter: github-actions
-# Load when: target repo uses GitHub Actions as its CI system.
-# Changes: offense rules add GHA-specific pattern matchers;
-#          defense scaffolds include .github/workflows/ci.yml templates;
-#          ast-grep rules target YAML workflow files in addition to Python.
-
 adapter_id: github-actions
 load_when: ci_system == "github-actions"
 changes:
@@ -22,3 +16,49 @@ changes:
       addition: "Include .github/workflows/ci.yml with PYTHONPATH env and Install deps step in all scaffolds"
   forbidden_moves:
     - "Do not generate ast-grep rules for YAML that require Python AST parsing"
+
+scaffold_files:
+  .github/workflows/ci.yml: |
+    name: CI
+    on:
+      push:
+        branches: [main]
+      pull_request:
+        branches: [main]
+    jobs:
+      lint-and-test:
+        runs-on: ubuntu-latest
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/setup-python@v5
+            with:
+              python-version: "3.11"
+          - name: Install deps
+            run: pip install pyyaml jsonschema "pydantic>=2.0"
+          - name: Install project
+            run: pip install -e .
+          - name: Compile check
+            run: python -m compileall . -q
+          - name: Lint
+            run: pip install ruff && ruff check .
+          - name: Test
+            run: pip install pytest && pytest -q
+      validate-workflows:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/setup-python@v5
+            with:
+              python-version: "3.11"
+          - name: Install deps
+            run: pip install pyyaml
+          - name: Validate workflow YAML
+            run: |
+              python -c "
+import glob, yaml
+for f in glob.glob('.github/workflows/*.yml'):
+    yaml.safe_load(open(f).read())
+    print(f'OK: {f}')
+"

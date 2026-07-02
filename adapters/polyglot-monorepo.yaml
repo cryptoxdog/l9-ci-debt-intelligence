@@ -1,22 +1,74 @@
-# Adapter: polyglot-monorepo
-# Load when: target repo contains both Python and TypeScript/JavaScript workspaces.
-# Changes: scaffold includes both pyproject.toml and package.json;
-#          ast-grep rules generated for both Python and TypeScript;
-#          effort atlas segments by language.
-
 adapter_id: polyglot-monorepo
-load_when: repo_type == "polyglot-monorepo"
+load_when: languages contains "python" and languages contains "typescript"
 changes:
+  authority_order_addition:
+    - "CI-IMPORT-001 applies to ALL jobs in GHA workflows, not only Python-named jobs"
+    - "CI-DEPS-001 applies independently to pyproject.toml AND package.json"
   offense_additions:
     - rule: build_effort_atlas
-      addition: "Segment effort_atlas by language (python | typescript | yaml)"
+      addition: "Tag findings with language field: python or typescript"
   defense_additions:
     - rule: scaffold_generator
-      addition: "Scaffold includes pyproject.toml + package.json + shared .github/workflows/ci.yml"
+      addition: "Generate both pyproject.toml and package.json scaffolds"
     - rule: corpus_to_astgrep
-      addition: "Generate rule sets for python, typescript, and yaml languages separately"
-    - rule: copilot_instructions_generator
-      addition: "Generate language-tagged instruction blocks: <!-- lang: python --> and <!-- lang: typescript -->"
+      addition: "Generate ast-grep rules for both Python (language: python) and YAML (language: yaml)"
   forbidden_moves:
-    - "Do not merge Python and TypeScript ast-grep rules into a single file"
-    - "Do not generate a single scaffold that assumes one language"
+    - "Do not generate a single-language scaffold for a confirmed polyglot repo"
+    - "Do not assume Python jobs are the only jobs that need PYTHONPATH"
+
+scaffold_files:
+  pyproject.toml: |
+    [project]
+    name = "REPLACE_ME_PYTHON"
+    version = "0.1.0"
+    requires-python = ">=3.11"
+    dependencies = ["pydantic>=2.0", "pyyaml", "jsonschema"]
+    [project.optional-dependencies]
+    dev = ["pytest", "ruff", "mypy"]
+    [build-system]
+    requires = ["hatchling"]
+    build-backend = "hatchling.build"
+  package.json: |
+    {
+      "name": "REPLACE_ME_NODE",
+      "version": "0.1.0",
+      "scripts": { "build": "tsc", "test": "jest", "lint": "eslint src/ --ext .ts" },
+      "dependencies": {},
+      "devDependencies": { "typescript": "^5.0.0", "jest": "^29.0.0", "ts-jest": "^29.0.0" }
+    }
+  .github/workflows/ci.yml: |
+    name: CI
+    on:
+      push: { branches: [main] }
+      pull_request: { branches: [main] }
+    jobs:
+      python:
+        runs-on: ubuntu-latest
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/setup-python@v5
+            with: { python-version: "3.11" }
+          - name: Install deps
+            run: pip install pyyaml jsonschema "pydantic>=2.0"
+          - name: Install project
+            run: pip install -e .
+          - name: Compile check
+            run: python -m compileall . -q
+          - name: Lint
+            run: pip install ruff && ruff check .
+          - name: Test
+            run: pip install pytest && pytest -q
+      node:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/setup-node@v4
+            with: { node-version: "20", cache: "npm" }
+          - name: Install deps
+            run: npm ci
+          - name: Build
+            run: npm run build
+          - name: Test
+            run: npm test
