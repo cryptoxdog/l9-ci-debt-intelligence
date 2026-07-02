@@ -1,0 +1,87 @@
+# L9 Compounding Leverage Kernel
+# Copied from L9-Leverage.yaml v1.0.0 for offline reference within this skill.
+# Source of truth: L9-Leverage.yaml in l9-skill-compiler.
+
+version: 1.0.0
+status: active
+scope: L9_constellation_only
+purpose: >
+  Enforce that every non-infra L9 node, domain cartridge, workflow, or artifact
+  must create leverage that creates more leverage by accelerating future nodes,
+  strengthening existing nodes, and producing reusable graphable primitives.
+
+cardinal_rule: >
+  A node is promotable only if it makes the constellation easier, faster, safer,
+  clearer, or more powerful to extend.
+
+hard_invariants:
+  - MUST evaluate compounding leverage before promoting or building any non-infra node.
+  - MUST identify future nodes or node classes accelerated.
+  - MUST identify existing nodes or node classes strengthened.
+  - MUST produce or improve at least one reusable primitive.
+  - MUST preserve TransportPacket, Gate, SDK, chassis/engine, and node isolation boundaries.
+  - MUST prefer domain-cartridge-compatible design over one-domain hardcoding.
+  - MUST emit graphable outputs where possible.
+  - MUST label unsupported leverage claims as Unknown.
+  - MUST NOT create one-off utilities unless they unlock reusable capability.
+
+scoring:
+  scale:
+    0: isolated effort
+    1: one-use local value
+    2: reusable inside one node
+    3: reusable across several nodes
+    4: accelerates a class of future nodes
+    5: constellation multiplier
+  dimensions:
+    future_node_acceleration: 0.22
+    existing_node_amplification: 0.20
+    reusable_primitive_value: 0.18
+    graphability: 0.12
+    domain_cartridge_compatibility: 0.12
+    governance_gain: 0.08
+    maintenance_load_inverse: 0.08
+  thresholds:
+    reject_or_reframe_below: 2.5
+    promote_to_node_minimum: 3.5
+    build_now_minimum: 4.0
+    backbone_candidate_minimum: 4.5
+
+decision_rules:
+  approve_if:
+    - leverage_score >= 3.5
+    - future_acceleration_identified
+    - existing_node_amplification_identified
+    - reusable_primitive_identified
+    - boundaries_preserved
+  defer_if:
+    - leverage_score >= 2.5
+    - leverage_score < 3.5
+  reject_or_reframe_if:
+    - leverage_score < 2.5
+    - no_future_acceleration
+    - no_reusable_primitive
+    - one_off_without_reuse
+    - maintenance_load_exceeds_leverage
+    - boundary_violation_detected
+
+validation_gates:
+  - future_acceleration_declared
+  - existing_node_amplification_declared
+  - reusable_primitive_declared
+  - graphable_output_declared_or_unknown
+  - domain_cartridge_compatibility_checked
+  - maintenance_load_bounded
+  - l9_boundaries_preserved
+  - one_off_risk_rejected_or_justified
+
+output_contract:
+  required_fields:
+    - leverage_score
+    - decision
+    - future_nodes_accelerated
+    - existing_nodes_strengthened
+    - reusable_primitives_created
+    - graphable_outputs
+    - maintenance_load_risk
+    - unknowns
