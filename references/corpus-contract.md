@@ -6,8 +6,8 @@ role: corpus_contract
 tags: [corpus, ingestion, schema, resolver-handoff]
 owner: igor_beylin
 status: active
-version: 1.0.0
-updated: 2026-07-02
+version: 1.1.0
+updated: 2026-07-03
 /L9_META -->
 
 # Corpus Contract
@@ -17,39 +17,61 @@ updated: 2026-07-02
 Defines the schema and ingestion contract for artifacts handed off from
 l9-ci-debt-resolver to l9-ci-debt-intelligence.
 
-## Upstream Artifacts
+## Upstream Handoff
 
-### Primary: `PR_REMEDIATION_FINDINGS.jsonl`
+Resolver (`Quantum-L9/l9-ci-debt-resolver`) triggers this repo via
+`repository_dispatch` event `ci_debt_resolver_corpus_ready`. The dispatch
+`client_payload` carries `source_repo`, `run_id`, `run_attempt`, `source_sha`,
+and `artifact_name` (`ci-debt-resolver-corpus`). `corpus-update.yml` downloads
+that artifact from the resolver run using `L9_RESOLVER_READ_TOKEN`.
 
-One JSONL record per finding. Each record must conform to this schema:
+### Artifact: `ci-debt-resolver-corpus`
+
+| File | Purpose |
+|---|---|
+| `CI_DEBT_FINDINGS.jsonl` | one resolver finding per line (ingested) |
+| `REMEDIATION_TRACES.jsonl` | per-run remediation traces (provenance) |
+| `CORPUS_MANIFEST.json` | producer, source repo/sha, run id, row counts, sha256 |
+
+### Primary: `CI_DEBT_FINDINGS.jsonl` (resolver schema)
+
+Each record conforms to the resolver's
+`schemas/ci_debt_finding.schema.json`. Required fields:
 
 ```json
 {
-  "pr": "<integer>",
-  "cycle": "<integer>",
-  "finding_id": "<string: e.g. CI-IMPORT-001-pr3-c1>",
-  "source": "<string: gha_log | coderabbit_inline | coderabbit_walkthrough | manual>",
-  "severity": "<string: critical | high | medium | low>",
-  "classification": "<string: valid_current | unknown | doctrine_reject | out_of_scope>",
-  "location": "<string: file:line or 'repo-wide'>",
-  "description": "<string>",
-  "action": "<string: patch | not_patched>",
-  "rule_id": "<string: e.g. CI-IMPORT-001 | null>",
-  "topology": "<string: gha_workflow | python_deps | api_drift | test_isolation | null>",
-  "resolved": "<boolean>",
-  "commit_sha": "<string | null>"
+  "schema_version": "1.0",
+  "source": "l9-ci-debt-resolver",
+  "repo": "<owner/name>",
+  "finding_id": "<string>",
+  "failure_type": "<string: resolver category id>",
+  "root_cause": "<string>",
+  "outcome": "<string: repaired | failed | blocked | unknown | observed>",
+  "created_at": "<ISO-8601 string>"
 }
 ```
 
-### Secondary: `PR_REMEDIATION_CONVERGENCE_REPORT.md`
+### Resolver -> Corpus mapping (`map_resolver_findings.py`)
 
-Used to extract per-PR cycle counts, convergence status, and known blockers.
-Parsed by `tools/corpus/ingest_findings.py` into `outputs/corpus/repo_index.json`.
+Resolver findings are deterministically mapped to `schemas/corpus.schema.json`
+before ingest. Every corpus field traces to a resolver field or a documented
+default; no finding data is invented.
 
-### Gate artifacts (optional)
+| Corpus field | Derivation |
+|---|---|
+| `finding_id` | `finding_id` |
+| `repo` | `repo` |
+| `rule_id` | `failure_type` (else `UNKNOWN`) |
+| `tenant_id` | repo owner (before `/`), else repo, else `unknown` |
+| `classification` | `outcome` = `unknown`/absent -> `unknown`; else `valid_current` |
+| `action` | `outcome` = `repaired` -> `patch`; else `not_patched` |
+| `source` | `gha_log` (resolver findings derive from GHA logs) |
+| `ci_system` | existing `ci_system`, else `github-actions` |
+| `language` | existing `language`, else `unknown` |
+| `pr` | `pr_number` when present |
 
-`gate_artifacts/pr_<N>_cycle_<C>/` directories. Parsed to extract local gate
-results (A/B/C/D pass rates) for the effort atlas.
+The resolver's `source` constant is retained as `resolver_source`; all other
+resolver fields are preserved for provenance (`additionalProperties: true`).
 
 ## Validation Rules
 

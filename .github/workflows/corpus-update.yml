@@ -3,17 +3,28 @@ name: corpus-update
 on:
   workflow_dispatch:
     inputs:
-      findings_artifact_url:
-        description: "URL to PR_REMEDIATION_FINDINGS.jsonl artifact from resolver run"
+      source_repo:
+        description: "Resolver repo that produced the corpus (owner/name)"
+        required: false
+        default: "Quantum-L9/l9-ci-debt-resolver"
+      run_id:
+        description: "Resolver workflow run id that uploaded ci-debt-resolver-corpus"
         required: false
   repository_dispatch:
-    types: [resolver-run-complete]
+    types: [ci_debt_resolver_corpus_ready]
+
+permissions:
+  contents: read
+
+env:
+  RESOLVER_ARTIFACT: ci-debt-resolver-corpus
 
 jobs:
   ingest-and-normalize:
     runs-on: ubuntu-latest
     env:
       PYTHONPATH: ${{ github.workspace }}
+      L9_RESOLVER_READ_TOKEN: ${{ secrets.L9_RESOLVER_READ_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
@@ -25,16 +36,48 @@ jobs:
       - name: Install deps
         run: pip install jsonschema pydantic pyyaml rich typer
 
-      - name: Download findings artifact
-        if: ${{ github.event.inputs.findings_artifact_url != '' }}
+      - name: Resolve source run
+        id: src
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          CP_REPO: ${{ github.event.client_payload.source_repo }}
+          CP_RUN: ${{ github.event.client_payload.run_id }}
+          IN_REPO: ${{ github.event.inputs.source_repo }}
+          IN_RUN: ${{ github.event.inputs.run_id }}
         run: |
-          curl -fsSL "${{ github.event.inputs.findings_artifact_url }}" \
-            -o /tmp/PR_REMEDIATION_FINDINGS.jsonl
+          if [ "$EVENT_NAME" = "repository_dispatch" ]; then
+            repo="$CP_REPO"
+            run="$CP_RUN"
+          else
+            repo="$IN_REPO"
+            run="$IN_RUN"
+          fi
+          if [ -z "$repo" ] || [ -z "$run" ]; then
+            echo "::error::source_repo and run_id are required (repo='$repo' run='$run')"
+            exit 1
+          fi
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+
+      - name: Download resolver corpus artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.RESOLVER_ARTIFACT }}
+          path: /tmp/resolver-corpus
+          repository: ${{ steps.src.outputs.repo }}
+          run-id: ${{ steps.src.outputs.run }}
+          github-token: ${{ env.L9_RESOLVER_READ_TOKEN }}
+
+      - name: Map resolver findings to corpus schema
+        run: |
+          python tools/corpus/map_resolver_findings.py \
+            /tmp/resolver-corpus/CI_DEBT_FINDINGS.jsonl \
+            --output-path /tmp/corpus_ready.jsonl
 
       - name: Ingest findings
         run: |
           python tools/corpus/ingest_findings.py \
-            /tmp/PR_REMEDIATION_FINDINGS.jsonl \
+            /tmp/corpus_ready.jsonl \
             --output-dir outputs/corpus
 
       - name: Normalize corpus
