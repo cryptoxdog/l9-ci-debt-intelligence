@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/regression-result/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "fixture_id",
+    "fixture_class",
+    "status",
+    "expected",
+    "observed"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.regression-result/v1"
+    },
+    "candidate_id": {
+      "type": "string"
+    },
+    "fixture_id": {
+      "type": "string"
+    },
+    "fixture_class": {
+      "enum": [
+        "positive_fixture",
+        "negative_fixture",
+        "schema_validation",
+        "lineage_validation"
+      ]
+    },
+    "status": {
+      "enum": ["passed", "failed"]
+    },
+    "expected": {},
+    "observed": {}
+  }
+}

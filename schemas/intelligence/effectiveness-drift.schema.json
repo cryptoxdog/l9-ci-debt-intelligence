@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/effectiveness-drift/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "comparison_id",
+    "baseline_report_id",
+    "current_report_id",
+    "pack_identity_compatible",
+    "metric_deltas",
+    "regression_state",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.effectiveness-drift/v1"
+    },
+    "comparison_id": {
+      "type": "string",
+      "pattern": "^drift_[0-9a-f]{64}$"
+    },
+    "baseline_report_id": {
+      "type": "string"
+    },
+    "current_report_id": {
+      "type": "string"
+    },
+    "pack_identity_compatible": {
+      "type": "boolean"
+    },
+    "metric_deltas": {
+      "type": "object"
+    },
+    "regression_state": {
+      "enum": [
+        "insufficient_evidence",
+        "stable",
+        "improved",
+        "degraded",
+        "critical_regression"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

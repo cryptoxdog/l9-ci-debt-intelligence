@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/defense-pack/v1",
+  "title": "L9 Immutable Debt Defense Pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "pack_id",
+    "version",
+    "corpus_snapshot",
+    "analysis_run",
+    "compilation_id",
+    "compiler_version",
+    "taxonomy_version",
+    "SDK_contract_version",
+    "compatibility",
+    "rules",
+    "checksums",
+    "signature_metadata",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.debt-defense/v1"
+    },
+    "pack_id": {
+      "type": "string",
+      "pattern": "^pack_[0-9a-f]{64}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[A-Za-z0-9.-]+)?$"
+    },
+    "corpus_snapshot": {
+      "type": "string",
+      "pattern": "^cs_[0-9a-f]{64}$"
+    },
+    "analysis_run": {
+      "type": "string",
+      "pattern": "^ar_[0-9a-f]{64}$"
+    },
+    "compilation_id": {
+      "type": "string",
+      "pattern": "^compile_[0-9a-f]{64}$"
+    },
+    "compiler_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "taxonomy_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "SDK_contract_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "compatibility": {
+      "$ref": "l9://intelligence/defense-compatibility/v1"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    },
+    "checksums": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "signature_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "algorithm",
+        "signed_value"
+      ],
+      "properties": {
+        "required": {
+          "const": true
+        },
+        "algorithm": {
+          "const": "Ed25519"
+        },
+        "signed_value": {
+          "const": "archive_sha256"
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_rule_id",
+        "candidate_id",
+        "kind",
+        "score",
+        "source_path",
+        "source_sha256",
+        "lineage"
+      ],
+      "properties": {
+        "canonical_rule_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_id": {
+          "type": "string",
+          "pattern": "^candidate_[0-9a-f]{64}$"
+        },
+        "kind": {
+          "enum": [
+            "ast_grep",
+            "sdk_architecture_contract",
+            "generated_invariant"
+          ]
+        },
+        "score": {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 5
+        },
+        "source_path": {
+          "type": "string",
+          "pattern": "^rules/"
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lineage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "corpus_snapshot",
+            "analysis_run",
+            "compilation_id",
+            "recurrence_fingerprint"
+          ],
+          "properties": {
+            "corpus_snapshot": {
+              "type": "string"
+            },
+            "analysis_run": {
+              "type": "string"
+            },
+            "compilation_id": {
+              "type": "string"
+            },
+            "recurrence_fingerprint": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

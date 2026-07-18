@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/corpus-event/v1",
+  "title": "L9 Intelligence Corpus Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "producer_id",
+    "producer_contract",
+    "event_id",
+    "event_class",
+    "event_time",
+    "snapshot_or_run_id",
+    "redaction_status",
+    "limitations",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.corpus-event/v1"
+    },
+    "producer_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "producer_contract": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "sdk_contract": {
+      "type": ["string", "null"]
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$"
+    },
+    "event_class": {
+      "enum": [
+        "static_finding",
+        "CI_failure_classification",
+        "repair_attempt",
+        "verification_outcome",
+        "editor_diagnostic_outcome",
+        "false_positive_disposition",
+        "gate_outcome"
+      ]
+    },
+    "event_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "snapshot_or_run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "redaction_status": {
+      "enum": [
+        "producer_redacted",
+        "intelligence_redacted",
+        "quarantine_required"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "unknowns": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/unknown"
+      },
+      "default": []
+    },
+    "lineage": {
+      "$ref": "#/$defs/lineage"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Producer-owned payload validated by its public contract."
+    }
+  },
+  "$defs": {
+    "unknown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "reason"],
+      "properties": {
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "enum": [
+            "not_observed",
+            "not_applicable",
+            "producer_did_not_emit",
+            "redacted",
+            "incompatible_version",
+            "unavailable"
+          ]
+        }
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["producer_event_hash"],
+      "properties": {
+        "producer_event_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "parent_event_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "default": []
+        }
+      }
+    }
+  }
+}

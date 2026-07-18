@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/learning-observation/v1",
+  "title": "L9 Intelligence Learning Observation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_id",
+    "producer_id",
+    "event_class",
+    "producer_contract",
+    "occurrence_scope",
+    "recurrence_fingerprint"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.learning-observation/v1"
+    },
+    "record_id": {
+      "type": "string",
+      "pattern": "^cr_[0-9a-f]{64}$"
+    },
+    "producer_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_class": {
+      "type": "string",
+      "minLength": 1
+    },
+    "producer_contract": {
+      "type": "string",
+      "minLength": 1
+    },
+    "occurrence_scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "recurrence_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "canonical_rule_id": {
+      "type": ["string", "null"]
+    },
+    "repository_identity": {
+      "type": ["string", "null"]
+    },
+    "component": {
+      "type": ["string", "null"]
+    },
+    "remediation_class": {
+      "type": ["string", "null"]
+    },
+    "effort_minutes": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "validation_outcome": {
+      "type": ["string", "null"],
+      "enum": [
+        "passed",
+        "failed",
+        "partial",
+        "unknown",
+        null
+      ]
+    },
+    "false_positive_disposition": {
+      "type": ["string", "null"],
+      "enum": [
+        "confirmed_false_positive",
+        "confirmed_true_positive",
+        "inconclusive",
+        null
+      ]
+    },
+    "pack_version": {
+      "type": ["string", "null"]
+    }
+  }
+}

@@ -1,0 +1,97 @@
+schema: l9.intelligence-snapshot-contract/v1
+metadata:
+  repository: Quantum-L9/l9-ci-debt-intelligence
+  phase: INTEL-P2
+  status: authoritative
+purpose: >
+  Materialize immutable, reproducible corpus snapshots from verified INTEL-P1
+  accepted records without rewriting ingestion history.
+source:
+  accepted_records: var/intelligence/records
+  ingestion_ledger: var/intelligence/ledger/events.jsonl
+  required_verification: l9.ingestion-verification/v1
+snapshot_identity:
+  algorithm: SHA-256
+  prefix: cs_
+  inputs:
+    - schema_version
+    - ordered_record_ids
+    - ordered_record_hashes
+    - partition_plan
+    - snapshot_format_version
+    - SDK_contract_version
+  excluded:
+    - build_time
+    - filesystem_paths
+    - machine_identity
+    - process_identity
+    - record_arrival_order
+storage:
+  format: Parquet
+  compression: zstd
+  logical_partitioning:
+    - event_class
+    - producer_id
+  row_order:
+    - record_id
+  timestamps:
+    representation: UTC
+  prohibited:
+    - mutable latest directory as authority
+    - unversioned snapshot replacement
+    - embedding source content
+    - embedding secret values
+    - embedding absolute paths
+manifest:
+  required:
+    - snapshot_id
+    - format_version
+    - SDK_contract_version
+    - record_count
+    - partition_count
+    - ordered_partition_hashes
+    - source_record_set_hash
+    - deterministic_output_hash
+    - build_metadata
+    - limitations
+  build_metadata:
+    informational_only:
+      - created_at
+      - implementation_version
+      - pyarrow_version
+      - duckdb_version
+duckdb:
+  role: local analytical projection
+  authority: derived
+  persistence: optional
+  requirements:
+    - read snapshot Parquet partitions
+    - expose deterministic corpus_records view
+    - never mutate source Parquet
+    - never become corpus authority
+immutability:
+  rules:
+    - existing snapshot objects are never overwritten
+    - identical inputs resolve to the same snapshot identity
+    - identical inputs produce byte-identical logical manifests
+    - hash mismatch terminates publication
+    - snapshot correction requires a new snapshot
+phase_3:
+  includes:
+    - deterministic snapshot planning
+    - immutable Parquet partition generation
+    - snapshot manifest generation
+    - source record set hashing
+    - partition hashing
+    - snapshot verification
+    - DuckDB read-only analytical projection
+    - snapshot CLI
+  excludes:
+    - recurrence metrics
+    - co-occurrence metrics
+    - effort modelling
+    - rule effectiveness
+    - candidate rules
+    - defense-pack compilation
+    - signing
+    - release publication

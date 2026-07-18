@@ -1,0 +1,105 @@
+schema: l9.architecture-spec/v1
+metadata:
+  repository: Quantum-L9/l9-ci-debt-intelligence
+  phase: INTEL-P6
+  status: authoritative
+identity:
+  role: fleet-learning-and-prevention-compiler
+  plane: corpus-learning-and-artifact-compilation
+  operating_model:
+    - historical
+    - cross-repository
+    - append-and-correction-oriented
+mission: >
+  Ingest compatible, redacted producer events; preserve immutable lineage;
+  maintain the canonical fleet corpus; and later compile deterministic,
+  immutable prevention artifacts.
+dependency_direction:
+  required:
+    - l9-ci-debt-intelligence -> l9-ci-sdk public contracts
+  event_inputs:
+    - l9-ci-core -> l9-ci-debt-intelligence
+    - l9-ci-debt-resolver -> l9-ci-debt-intelligence
+    - PR_Repair -> l9-ci-debt-intelligence
+    - l9-ci-debt-lsp -> l9-ci-debt-intelligence
+  prohibited:
+    - l9-ci-debt-intelligence -> producer runtime internals
+    - l9-ci-debt-intelligence -> l9-ci-sdk private internals
+    - l9-ci-debt-intelligence -> source repository mutation
+owns:
+  - corpus event envelope
+  - corpus schema extensions
+  - producer compatibility registry
+  - ingestion validation
+  - redaction state
+  - quarantine classification
+  - correction events
+  - retraction events
+  - producer lineage
+  - explicit unknown representation
+does_not_own:
+  - SDK evidence schema
+  - SDK finding schema
+  - SDK source-location schema
+  - SDK validation-result schema
+  - scanner output parsing
+  - repository source parsing
+  - CI orchestration
+  - editor protocol
+  - repository patching
+  - branch operations
+  - repair execution
+phase_1:
+  name: schema-federation
+  status: implemented
+phase_2:
+  name: reproducible-ingestion
+  status: implemented
+phase_3:
+  name: immutable-snapshots
+  status: implemented
+phase_4:
+  name: learning-metrics
+  status: implemented
+phase_5:
+  name: rule-compilation
+  status: implemented
+phase_6:
+  name: signed-publication
+  status: implemented
+phase_7:
+  name: closed-loop-effectiveness
+  status: implemented
+  includes:
+    - canonical CI outcome ingestion
+    - canonical LSP outcome ingestion
+    - canonical repair outcome ingestion
+    - deterministic outcome deduplication
+    - rule effectiveness metrics
+    - pack effectiveness metrics
+    - coverage and unknown accounting
+    - drift comparison
+    - rollback recommendations
+    - retirement recommendations
+    - immutable effectiveness manifests
+  excludes:
+    - Core governance mutation
+    - LSP pack activation
+    - automatic rollback
+    - automatic retirement
+    - release deletion
+    - source repository mutation
+legacy:
+  status: transitional
+  paths:
+    - tools
+    - adapters
+    - outputs
+    - references
+    - schemas/corpus.schema.json
+    - schemas/cooccurrence.schema.json
+    - schemas/effort_atlas.schema.json
+    - schemas/invariant.schema.json
+  rule: >
+    Legacy paths may be read for migration analysis but must not be imported
+    by the authoritative src/l9_debt_intelligence package.

@@ -1,0 +1,36 @@
+schema: l9.ownership-spec/v1
+repository: Quantum-L9/l9-ci-debt-intelligence
+intelligence_owns:
+  corpus:
+    - record extensions
+    - ingestion lifecycle
+    - redaction disposition
+    - quarantine disposition
+    - correction chain
+    - retraction chain
+    - producer lineage
+  compatibility:
+    - accepted producer event classes
+    - accepted producer contract versions
+    - minimum SDK contract requirements
+  future_compilation:
+    - corpus snapshots
+    - candidate prevention rules
+    - immutable defense packs
+    - publication manifests
+federated_from_sdk:
+  - source-location
+  - evidence
+  - finding
+  - snapshot
+  - validation-result
+  - coverage
+prohibited:
+  - copying SDK base schemas into this repository
+  - redefining SDK finding identity
+  - parsing scanner-native reports
+  - patching producer repositories
+  - pushing branches
+  - weakening Core policy
+  - importing producer implementation packages
+  - fabricating unavailable producer fields

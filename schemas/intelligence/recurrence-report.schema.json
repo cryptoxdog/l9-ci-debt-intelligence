@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/recurrence-report/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_snapshot_id",
+    "rows",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.recurrence-report/v1"
+    },
+    "source_snapshot_id": {
+      "type": "string",
+      "pattern": "^cs_[0-9a-f]{64}$"
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "recurrence_fingerprint",
+          "event_class",
+          "occurrence_count",
+          "distinct_scope_count",
+          "distinct_producer_count",
+          "first_scope",
+          "last_scope"
+        ],
+        "properties": {
+          "recurrence_fingerprint": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "event_class": {
+            "type": "string"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "distinct_scope_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "distinct_producer_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "first_scope": {
+            "type": "string"
+          },
+          "last_scope": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

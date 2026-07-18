@@ -1,0 +1,108 @@
+name: Intelligence Phase 3 snapshots
+on:
+  pull_request:
+    paths:
+      - ".l9/snapshot-contract.yaml"
+      - "requirements/snapshot.txt"
+      - "schemas/intelligence/**"
+      - "src/l9_debt_intelligence/snapshots/**"
+      - "src/l9_debt_intelligence/cli.py"
+      - "tests/snapshots/**"
+      - "tests/architecture/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".l9/snapshot-contract.yaml"
+      - "requirements/snapshot.txt"
+      - "schemas/intelligence/**"
+      - "src/l9_debt_intelligence/snapshots/**"
+      - "src/l9_debt_intelligence/cli.py"
+      - "tests/snapshots/**"
+      - "tests/architecture/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: intelligence-phase-3-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  snapshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout immutable event revision
+        env:
+          REPOSITORY: ${{ github.repository }}
+          REVISION: ${{ github.sha }}
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin \
+            "https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git"
+          git -c protocol.version=2 fetch --depth=1 origin "${REVISION}"
+          git checkout --detach FETCH_HEAD
+          git remote set-url origin \
+            "https://github.com/${REPOSITORY}.git"
+      - name: Install project and snapshot dependencies
+        run: |
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            -e ".[dev]"
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            -r requirements/snapshot.txt
+      - name: Run architecture and snapshot tests
+        run: |
+          python -m pytest \
+            tests/architecture \
+            tests/contracts \
+            tests/ingestion \
+            tests/snapshots
+      - name: Exercise snapshot lifecycle
+        run: |
+          set -euo pipefail
+          workspace="$(mktemp -d)"
+          ingestion="${workspace}/ingestion"
+          snapshots="${workspace}/snapshots"
+          database="${workspace}/analytics/corpus.duckdb"
+          l9-intelligence ingest-event \
+            tests/fixtures/producers/valid-core-gate.json \
+            --storage-root "${ingestion}"
+          l9-intelligence build-snapshot \
+            --storage-root "${ingestion}" \
+            --snapshots-root "${snapshots}" \
+            --output "${workspace}/build.json"
+          snapshot_id="$(
+            python - "${workspace}/build.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          value = json.loads(
+              Path(sys.argv[1]).read_text(encoding="utf-8")
+          )
+          print(value["snapshot_id"])
+          PY
+          )"
+          snapshot="${snapshots}/${snapshot_id}"
+          l9-intelligence verify-snapshot \
+            "${snapshot}" \
+            --output "${workspace}/verification.json"
+          l9-intelligence create-duckdb-projection \
+            "${snapshot}" \
+            --database "${database}" \
+            --output "${workspace}/projection.json"
+          python - "${workspace}/verification.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          value = json.loads(
+              Path(sys.argv[1]).read_text(encoding="utf-8")
+          )
+          assert value["status"] == "valid", value
+          assert value["record_count"] == 1, value
+          assert value["partition_count"] == 1, value
+          PY

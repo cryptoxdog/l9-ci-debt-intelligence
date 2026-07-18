@@ -1,0 +1,93 @@
+schema: l9.intelligence-compiler-contract/v1
+metadata:
+  repository: Quantum-L9/l9-ci-debt-intelligence
+  phase: INTEL-P4
+  status: authoritative
+input:
+  required:
+    - verified l9.analysis-manifest/v1
+    - verified immutable source snapshot
+    - recurrence report
+    - co-occurrence matrix
+    - effort atlas
+    - rule-effectiveness report
+  prohibited:
+    - mutable ingestion state
+    - raw logs
+    - source repository checkout
+    - legacy generated outputs
+    - unpublished working-tree corpus
+candidate_identity:
+  algorithm: SHA-256
+  prefix: candidate_
+  inputs:
+    - source_snapshot_id
+    - analysis_run_id
+    - recurrence_fingerprint
+    - candidate_kind
+    - normalized_match_contract
+    - normalized_action_contract
+scoring:
+  scale:
+    minimum: 0
+    maximum: 5
+  dimensions:
+    recurrence:
+      weight: 0.30
+    scope_breadth:
+      weight: 0.20
+    effort:
+      weight: 0.15
+    repair_success:
+      weight: 0.15
+    false_positive_safety:
+      weight: 0.20
+  thresholds:
+    compile: 3.0
+    promotion_eligible: 4.0
+  unknown_rule: Unknown evidence contributes no positive score.
+  prohibition: Unknown evidence is never converted to favorable evidence.
+compiler_outputs:
+  - candidate rule catalog
+  - generated invariants
+  - ast-grep rule candidates
+  - SDK architecture-contract candidates
+  - regression fixtures
+  - regression results
+  - compiler manifest
+determinism:
+  - candidate order is canonical
+  - YAML key order is stable
+  - JSON serialization is canonical
+  - compiler timestamps do not participate in artifact identity
+  - same inputs and compiler version produce the same output hashes
+safety:
+  generated_rules:
+    state: candidate_only
+    blocking_policy: prohibited
+    automatic_promotion: prohibited
+    external_commands: prohibited
+    repository_mutation: prohibited
+  required_regression_classes:
+    - positive_fixture
+    - negative_fixture
+    - deterministic_rebuild
+    - schema_validation
+    - lineage_validation
+phase_5:
+  includes:
+    - candidate extraction
+    - leverage scoring
+    - generated invariants
+    - ast-grep candidate compilation
+    - SDK architecture-contract candidate compilation
+    - regression fixture compilation
+    - regression execution
+    - deterministic compiler manifest
+  excludes:
+    - defense-pack assembly
+    - signing
+    - release channels
+    - promotion
+    - retirement
+    - Core policy mutation

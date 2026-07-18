@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/effectiveness-outcome/v1",
+  "title": "L9 Defense Effectiveness Outcome",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "producer_id",
+    "producer_contract",
+    "pack_id",
+    "pack_version",
+    "canonical_rule_id",
+    "surface",
+    "outcome_class",
+    "observation_scope",
+    "observed_at",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.effectiveness-outcome/v1"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "producer_id": {
+      "enum": [
+        "Quantum-L9/l9-ci-core",
+        "Quantum-L9/l9-ci-debt-lsp",
+        "Quantum-L9/l9-ci-debt-resolver",
+        "Quantum-L9/PR_Repair"
+      ]
+    },
+    "producer_contract": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pack_id": {
+      "type": "string",
+      "pattern": "^pack_[0-9a-f]{64}$"
+    },
+    "pack_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "canonical_rule_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "surface": {
+      "enum": [
+        "CI",
+        "LSP",
+        "repair"
+      ]
+    },
+    "outcome_class": {
+      "enum": [
+        "prevented_before_merge",
+        "detected_in_CI",
+        "escaped_detection",
+        "diagnostic_shown",
+        "diagnostic_accepted",
+        "diagnostic_dismissed",
+        "confirmed_false_positive",
+        "quick_fix_applied",
+        "quick_fix_reverted",
+        "repair_succeeded",
+        "repair_failed",
+        "repair_partial",
+        "repair_rolled_back",
+        "rule_not_evaluated",
+        "evaluation_incomplete",
+        "outcome_unknown"
+      ]
+    },
+    "observation_scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finding_id": {
+      "type": ["string", "null"]
+    },
+    "repository_pseudonym": {
+      "type": ["string", "null"],
+      "pattern": "^(repo_[0-9a-f]{32}|null)$"
+    },
+    "snapshot_identity": {
+      "type": ["string", "null"]
+    },
+    "document_identity": {
+      "type": ["string", "null"]
+    },
+    "policy_mode": {
+      "type": ["string", "null"],
+      "enum": [
+        "blocking",
+        "advisory",
+        "shadow",
+        "disabled",
+        null
+      ]
+    },
+    "latency_ms": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "effort_minutes": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  }
+}

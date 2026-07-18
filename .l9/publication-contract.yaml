@@ -1,0 +1,191 @@
+schema: l9.intelligence-publication-contract/v1
+metadata:
+  repository: Quantum-L9/l9-ci-debt-intelligence
+  phase: INTEL-P5
+  status: authoritative
+protocol:
+  defense_pack: l9.debt-defense/v1
+  publication_manifest: l9.defense-publication/v1
+  compatibility_matrix: l9.defense-compatibility/v1
+  channel_index: l9.defense-channel-index/v1
+  retirement_record: l9.defense-retirement/v1
+input:
+  required:
+    - verified l9.compiler-manifest/v1
+    - zero failed compiler regressions
+    - immutable source snapshot lineage
+    - immutable analysis-run lineage
+    - compiler version
+    - SDK contract version
+    - taxonomy version
+    - compatibility matrix
+  prohibited:
+    - mutable corpus state
+    - raw corpus records
+    - source repository content
+    - raw CI logs
+    - deferred candidates
+    - unsigned working-tree output
+pack:
+  required_fields:
+    - version
+    - corpus_snapshot
+    - analysis_run
+    - compilation_id
+    - compiler_version
+    - taxonomy_version
+    - SDK_contract_version
+    - compatibility
+    - rules
+    - checksums
+    - signature_metadata
+  rule_selection:
+    allowed_states:
+      - promotion_eligible
+    prohibited_states:
+      - deferred
+      - compiled_candidate
+  privacy:
+    source_content: prohibited
+    repository_identity: prohibited
+    absolute_paths: prohibited
+    secret_values: prohibited
+    raw_logs: prohibited
+    corpus_records: prohibited
+  identity:
+    algorithm: SHA-256
+    prefix: pack_
+    inputs:
+      - protocol
+      - version
+      - corpus_snapshot
+      - analysis_run
+      - compilation_id
+      - compiler_version
+      - taxonomy_version
+      - SDK_contract_version
+      - compatibility
+      - ordered_rules
+      - ordered_checksums
+archive:
+  format: tar.gz
+  deterministic:
+    file_order: lexicographic
+    uid: 0
+    gid: 0
+    uname: empty
+    gname: empty
+    mtime: 0
+    gzip_mtime: 0
+    mode_files: "0644"
+  contents:
+    - defense-pack.json
+    - rules
+    - compatibility.json
+    - checksums.json
+signature:
+  algorithm: Ed25519
+  encoding: base64
+  signed_value: archive_sha256
+  private_key_storage: external_secret_only
+  public_key_distribution: publication_manifest
+  prohibited:
+    - private key in repository
+    - private key in defense pack
+    - unsigned stable publication
+publication_gates:
+  - schema_valid
+  - deterministic_build
+  - corpus_snapshot_pinned
+  - compiler_version_pinned
+  - leverage_threshold_met
+  - false_positive_budget_met
+  - compatibility_tested
+  - regression_tests_passed
+  - signature_verified
+  - rollback_available
+channels:
+  allowed:
+    - experimental
+    - shadow
+    - stable
+    - retired
+  rules:
+    experimental:
+      signature_required: true
+      rollback_required: true
+    shadow:
+      signature_required: true
+      rollback_required: true
+      compatibility_required: true
+    stable:
+      signature_required: true
+      rollback_required: true
+      compatibility_required: true
+      manual_approval_required: true
+    retired:
+      activation_prohibited: true
+rollback:
+  required:
+    - previous_pack_version
+    - previous_pack_sha256
+    - previous_pack_signature
+  behavior:
+    - channel update is atomic
+    - previous known-good version is retained
+    - consumers activate explicit pack versions
+    - rollback never recompiles a pack
+retirement:
+  append_only: true
+  required:
+    - pack_version
+    - pack_sha256
+    - reason
+    - replacement_version_or_null
+    - retired_at
+    - issuer
+  prohibition:
+    - deleting publication history
+    - silently replacing a pack at the same version
+distribution:
+  preferred:
+    - GitHub_Releases
+    - OCI_artifacts
+  prohibited:
+    - mutable latest artifacts as authority
+    - unversioned working-tree copies
+    - publishing full corpus data
+authority:
+  intelligence:
+    - assemble pack
+    - validate compatibility
+    - sign pack
+    - publish immutable artifact
+    - recommend channel
+    - retire pack artifact
+  core:
+    - select promoted pack
+    - choose policy mode
+    - activate blocking governance
+  lsp:
+    - install pack
+    - verify pack
+    - activate explicit version
+    - retain previous known-good version
+phase_6:
+  includes:
+    - deterministic defense-pack assembly
+    - compatibility matrix
+    - Ed25519 detached signatures
+    - publication manifests
+    - release channel indexes
+    - rollback metadata
+    - retirement records
+    - GitHub Release workflow
+  excludes:
+    - Core governance mutation
+    - automatic blocking promotion
+    - LSP pack activation
+    - OCI push implementation
+    - closed-loop outcome ingestion
+    - effectiveness-based retirement recommendation

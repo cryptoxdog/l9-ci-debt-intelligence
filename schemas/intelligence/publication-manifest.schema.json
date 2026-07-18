@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/publication-manifest/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "pack_id",
+    "pack_version",
+    "archive_name",
+    "archive_sha256",
+    "archive_size",
+    "signature",
+    "public_key",
+    "signature_algorithm",
+    "channel",
+    "rollback",
+    "publication_gates"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.defense-publication/v1"
+    },
+    "pack_id": {
+      "type": "string",
+      "pattern": "^pack_[0-9a-f]{64}$"
+    },
+    "pack_version": {
+      "type": "string"
+    },
+    "archive_name": {
+      "type": "string",
+      "pattern": "\\.tar\\.gz$"
+    },
+    "archive_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "archive_size": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "signature": {
+      "type": "string",
+      "minLength": 1
+    },
+    "public_key": {
+      "type": "string",
+      "minLength": 1
+    },
+    "signature_algorithm": {
+      "const": "Ed25519"
+    },
+    "channel": {
+      "enum": [
+        "experimental",
+        "shadow",
+        "stable"
+      ]
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "available",
+        "previous_pack_version",
+        "previous_pack_sha256"
+      ],
+      "properties": {
+        "available": {
+          "type": "boolean"
+        },
+        "previous_pack_version": {
+          "type": ["string", "null"]
+        },
+        "previous_pack_sha256": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "publication_gates": {
+      "type": "object",
+      "additionalProperties": {
+        "const": true
+      }
+    }
+  }
+}

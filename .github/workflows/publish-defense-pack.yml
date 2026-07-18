@@ -1,0 +1,191 @@
+name: Publish signed defense pack
+on:
+  workflow_dispatch:
+    inputs:
+      compilation_artifact:
+        description: Name of the verified compilation artifact
+        required: true
+        type: string
+      pack_version:
+        description: Immutable semantic pack version
+        required: true
+        type: string
+      taxonomy_version:
+        description: Taxonomy version
+        required: true
+        type: string
+      channel:
+        description: Publication channel
+        required: true
+        type: choice
+        options:
+          - experimental
+          - shadow
+          - stable
+      previous_release_tag:
+        description: Previous release tag required for shadow/stable
+        required: false
+        type: string
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: publish-defense-${{ inputs.channel }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: defense-${{ inputs.channel }}
+    steps:
+      - name: Checkout immutable revision
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate signing secret
+        env:
+          PRIVATE_KEY_B64: ${{ secrets.L9_DEFENSE_PACK_PRIVATE_KEY_B64 }}
+        run: |
+          set -euo pipefail
+          test -n "${PRIVATE_KEY_B64}" || {
+            echo "L9_DEFENSE_PACK_PRIVATE_KEY_B64 is required" >&2
+            exit 1
+          }
+      - name: Install project
+        run: |
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            -e ".[dev]"
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            -r requirements/snapshot.txt \
+            -r requirements/publication.txt
+      - name: Download verified compilation
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.compilation_artifact }}
+          path: incoming-compilation
+      - name: Restore signing key
+        env:
+          PRIVATE_KEY_B64: ${{ secrets.L9_DEFENSE_PACK_PRIVATE_KEY_B64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/l9-signing"
+          printf '%s' "${PRIVATE_KEY_B64}" \
+            | base64 --decode \
+            > "${RUNNER_TEMP}/l9-signing/private.pem"
+          chmod 600 "${RUNNER_TEMP}/l9-signing/private.pem"
+      - name: Locate and verify compilation
+        id: compilation
+        run: |
+          set -euo pipefail
+          manifest="$(
+            find incoming-compilation \
+              -type f \
+              -name manifest.json \
+              -print \
+              | head -n 1
+          )"
+          test -n "${manifest}" || {
+            echo "compiler manifest not found" >&2
+            exit 1
+          }
+          compilation_path="$(dirname "${manifest}")"
+          l9-intelligence verify-compilation \
+            "${compilation_path}"
+          echo "path=${compilation_path}" >> "${GITHUB_OUTPUT}"
+      - name: Assemble defense pack
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          l9-intelligence assemble-defense-pack \
+            "${{ steps.compilation.outputs.path }}" \
+            --output-root dist/packs \
+            --version "${{ inputs.pack_version }}" \
+            --taxonomy-version "${{ inputs.taxonomy_version }}" \
+            --compatibility .l9/default-compatibility.json \
+            --output dist/build-result.json
+      - name: Download previous publication manifest
+        if: ${{ inputs.previous_release_tag != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist/previous
+          gh release download \
+            "${{ inputs.previous_release_tag }}" \
+            --pattern "publication-manifest.json" \
+            --dir dist/previous
+      - name: Enforce rollback input
+        if: ${{ inputs.channel != 'experimental' }}
+        run: |
+          set -euo pipefail
+          test -f dist/previous/publication-manifest.json || {
+            echo "shadow/stable requires a previous publication manifest" >&2
+            exit 1
+          }
+      - name: Sign defense pack
+        run: |
+          set -euo pipefail
+          previous=()
+          if [[ -f dist/previous/publication-manifest.json ]]; then
+            previous=(
+              --previous-manifest
+              dist/previous/publication-manifest.json
+            )
+          fi
+          l9-intelligence sign-defense-pack \
+            dist/build-result.json \
+            --private-key \
+              "${RUNNER_TEMP}/l9-signing/private.pem" \
+            --channel "${{ inputs.channel }}" \
+            --publication-manifest \
+              dist/publication-manifest.json \
+            "${previous[@]}"
+      - name: Verify signed pack
+        id: verify
+        run: |
+          set -euo pipefail
+          archive="$(
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          value = json.loads(
+              Path("dist/build-result.json").read_text()
+          )
+          print(value["archive_path"])
+          PY
+          )"
+          l9-intelligence verify-defense-pack \
+            dist/publication-manifest.json \
+            "${archive}" \
+            --output dist/verification.json
+          cp "${archive}" dist/
+          archive_name="$(basename "${archive}")"
+          echo "archive_name=${archive_name}" >> "${GITHUB_OUTPUT}"
+      - name: Create immutable GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="defense-v${{ inputs.pack_version }}"
+          if gh release view "${tag}" >/dev/null 2>&1; then
+            echo "Release ${tag} already exists; versions are immutable." >&2
+            exit 1
+          fi
+          gh release create \
+            "${tag}" \
+            "dist/${{ steps.verify.outputs.archive_name }}" \
+            dist/publication-manifest.json \
+            dist/verification.json \
+            .l9/default-compatibility.json \
+            --title "L9 Defense Pack ${{ inputs.pack_version }}" \
+            --notes "Channel: ${{ inputs.channel }}" \
+            --verify-tag
+      - name: Remove private key
+        if: always()
+        run: |
+          rm -rf "${RUNNER_TEMP}/l9-signing"

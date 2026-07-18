@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/defense-compatibility/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "sdk",
+    "core",
+    "lsp",
+    "platforms",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.defense-compatibility/v1"
+    },
+    "sdk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "minimum_version",
+        "maximum_version_exclusive"
+      ],
+      "properties": {
+        "contract": {
+          "type": "string"
+        },
+        "minimum_version": {
+          "type": "string"
+        },
+        "maximum_version_exclusive": {
+          "type": "string"
+        }
+      }
+    },
+    "core": {
+      "type": "object",
+      "required": [
+        "minimum_contract"
+      ]
+    },
+    "lsp": {
+      "type": "object",
+      "required": [
+        "minimum_contract"
+      ]
+    },
+    "platforms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

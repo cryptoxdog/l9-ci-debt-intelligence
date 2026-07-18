@@ -1,0 +1,21 @@
+{
+  "schema_version": "l9.effectiveness-outcome/v1",
+  "event_id": "lsp-observation-100",
+  "producer_id": "Quantum-L9/l9-ci-debt-lsp",
+  "producer_contract": "l9.lsp-diagnostic-outcome/v1",
+  "pack_id": "pack_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "pack_version": "1.0.0",
+  "canonical_rule_id": "l9.debt.example-rule",
+  "surface": "LSP",
+  "outcome_class": "diagnostic_accepted",
+  "observation_scope": "document-session-100",
+  "observed_at": "2026-07-17T12:00:00Z",
+  "finding_id": "finding-example-100",
+  "repository_pseudonym": "repo_0123456789abcdef0123456789abcdef",
+  "snapshot_identity": null,
+  "document_identity": "document-sha256-example",
+  "policy_mode": "advisory",
+  "latency_ms": 42,
+  "effort_minutes": null,
+  "limitations": []
+}

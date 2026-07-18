@@ -1,0 +1,39 @@
+{
+  "schema": "l9.sdk-schema-registry/v1",
+  "sdk": {
+    "repository": "Quantum-L9/l9-ci-sdk",
+    "revision": "c78486ea9b7d596d0b6db755b5780e5289878d35",
+    "integration_contract": "l9.integration-contract/v1"
+  },
+  "references": {
+    "source-location": {
+      "uri": "l9://sdk/source-location/v1",
+      "owner": "Quantum-L9/l9-ci-sdk"
+    },
+    "evidence": {
+      "uri": "l9://sdk/evidence/v1",
+      "owner": "Quantum-L9/l9-ci-sdk"
+    },
+    "finding": {
+      "uri": "l9://sdk/finding/v1",
+      "owner": "Quantum-L9/l9-ci-sdk"
+    },
+    "snapshot": {
+      "uri": "l9://sdk/snapshot/v1",
+      "owner": "Quantum-L9/l9-ci-sdk"
+    },
+    "validation-result": {
+      "uri": "l9://sdk/validation-result/v1",
+      "owner": "Quantum-L9/l9-ci-sdk"
+    },
+    "coverage": {
+      "uri": "l9://sdk/coverage/v1",
+      "owner": "Quantum-L9/l9-ci-sdk"
+    }
+  },
+  "policy": {
+    "local_schema_copies_allowed": false,
+    "private_sdk_imports_allowed": false,
+    "unknown_sdk_contract_behavior": "reject"
+  }
+}

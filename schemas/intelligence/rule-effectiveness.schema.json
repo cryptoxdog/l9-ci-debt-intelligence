@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/rule-effectiveness/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_snapshot_id",
+    "rows",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.rule-effectiveness/v1"
+    },
+    "source_snapshot_id": {
+      "type": "string",
+      "pattern": "^cs_[0-9a-f]{64}$"
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "canonical_rule_id",
+          "confirmed_false_positive_count",
+          "confirmed_true_positive_count",
+          "inconclusive_count",
+          "unknown_count",
+          "false_positive_ratio",
+          "attempt_count",
+          "successful_count",
+          "failed_count",
+          "partial_count",
+          "validation_unknown_count",
+          "success_ratio"
+        ],
+        "properties": {
+          "canonical_rule_id": {
+            "type": ["string", "null"]
+          },
+          "confirmed_false_positive_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "confirmed_true_positive_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "inconclusive_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unknown_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "false_positive_ratio": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "attempt_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "successful_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "partial_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "validation_unknown_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "success_ratio": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

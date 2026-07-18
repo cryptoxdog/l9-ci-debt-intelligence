@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/corpus-correction/v1",
+  "title": "L9 Intelligence Corpus Correction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "correction_id",
+    "target_record_id",
+    "replacement_event_id",
+    "reason",
+    "issued_at",
+    "issuer"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.corpus-correction/v1"
+    },
+    "correction_id": {
+      "type": "string",
+      "pattern": "^cc_[0-9a-f]{64}$"
+    },
+    "target_record_id": {
+      "type": "string",
+      "pattern": "^cr_[0-9a-f]{64}$"
+    },
+    "replacement_event_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "issuer": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

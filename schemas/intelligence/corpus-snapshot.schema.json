@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/corpus-snapshot/v1",
+  "title": "L9 Intelligence Corpus Snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "snapshot_id",
+    "format_version",
+    "sdk_contract_version",
+    "record_count",
+    "partition_count",
+    "source_record_set_hash",
+    "deterministic_output_hash",
+    "partitions",
+    "build_metadata",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.corpus-snapshot/v1"
+    },
+    "snapshot_id": {
+      "type": "string",
+      "pattern": "^cs_[0-9a-f]{64}$"
+    },
+    "format_version": {
+      "const": "l9.corpus-snapshot-format/v1"
+    },
+    "sdk_contract_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "record_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "partition_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "source_record_set_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "deterministic_output_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "partitions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/partition"
+      }
+    },
+    "build_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "created_at",
+        "implementation_version",
+        "pyarrow_version",
+        "duckdb_version"
+      ],
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "implementation_version": {
+          "type": "string"
+        },
+        "pyarrow_version": {
+          "type": "string"
+        },
+        "duckdb_version": {
+          "type": "string"
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "partition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_class",
+        "producer_id",
+        "relative_path",
+        "record_count",
+        "sha256"
+      ],
+      "properties": {
+        "event_class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "producer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "relative_path": {
+          "type": "string",
+          "pattern": "^partitions/"
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,100 @@
+name: Intelligence Phase 2 ingestion
+on:
+  pull_request:
+    paths:
+      - ".l9/ingestion-contract.yaml"
+      - ".l9/producer-compatibility.json"
+      - "schemas/intelligence/**"
+      - "src/l9_debt_intelligence/contracts/**"
+      - "src/l9_debt_intelligence/ingestion/**"
+      - "src/l9_debt_intelligence/cli.py"
+      - "tests/architecture/**"
+      - "tests/contracts/**"
+      - "tests/ingestion/**"
+      - "tests/fixtures/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".l9/ingestion-contract.yaml"
+      - ".l9/producer-compatibility.json"
+      - "schemas/intelligence/**"
+      - "src/l9_debt_intelligence/contracts/**"
+      - "src/l9_debt_intelligence/ingestion/**"
+      - "src/l9_debt_intelligence/cli.py"
+      - "tests/architecture/**"
+      - "tests/contracts/**"
+      - "tests/ingestion/**"
+      - "tests/fixtures/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: intelligence-phase-2-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ingestion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout immutable event revision
+        env:
+          REPOSITORY: ${{ github.repository }}
+          REVISION: ${{ github.sha }}
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin \
+            "https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git"
+          git -c protocol.version=2 fetch --depth=1 origin "${REVISION}"
+          git checkout --detach FETCH_HEAD
+          git remote set-url origin \
+            "https://github.com/${REPOSITORY}.git"
+      - name: Install project
+        run: |
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            -e ".[dev]"
+      - name: Run contract and ingestion tests
+        run: |
+          python -m pytest \
+            tests/architecture \
+            tests/contracts \
+            tests/ingestion
+      - name: Exercise deterministic ingestion
+        run: |
+          set -euo pipefail
+          storage="$(mktemp -d)"
+          l9-intelligence ingest-event \
+            tests/fixtures/producers/valid-core-gate.json \
+            --storage-root "${storage}" \
+            --output "${storage}/first.json"
+          l9-intelligence ingest-event \
+            tests/fixtures/producers/valid-core-gate.json \
+            --storage-root "${storage}" \
+            --output "${storage}/second.json"
+          l9-intelligence verify-store \
+            --storage-root "${storage}" \
+            --output "${storage}/verification.json"
+          python - "${storage}" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          root = Path(sys.argv[1])
+          first = json.loads(
+              (root / "first.json").read_text()
+          )
+          second = json.loads(
+              (root / "second.json").read_text()
+          )
+          verification = json.loads(
+              (root / "verification.json").read_text()
+          )
+          assert first["status"] == "accepted", first
+          assert second["status"] == "duplicate", second
+          assert first["record_id"] == second["record_id"]
+          assert verification["status"] == "valid"
+          assert verification["record_count"] == 1
+          PY

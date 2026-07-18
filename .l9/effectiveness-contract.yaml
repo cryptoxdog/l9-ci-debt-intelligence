@@ -1,0 +1,191 @@
+schema: l9.intelligence-effectiveness-contract/v1
+metadata:
+  repository: Quantum-L9/l9-ci-debt-intelligence
+  phase: INTEL-P6
+  status: authoritative
+purpose: >
+  Measure the post-publication effectiveness, safety, and operational value of
+  immutable defense packs using canonical CI, LSP, and repair outcome events.
+sources:
+  allowed:
+    - l9-ci-core
+    - l9-ci-debt-lsp
+    - l9-ci-debt-resolver
+    - PR_Repair
+  required_identity:
+    - event_id
+    - producer_id
+    - producer_contract
+    - pack_id
+    - pack_version
+    - canonical_rule_id
+    - outcome_class
+    - observation_scope
+    - observed_at
+  optional_identity:
+    - finding_id
+    - repository_pseudonym
+    - snapshot_identity
+    - document_identity
+    - policy_mode
+    - latency_ms
+    - effort_minutes
+privacy:
+  repository_identity: pseudonymous
+  source_content: prohibited
+  raw_logs: prohibited
+  absolute_paths: prohibited
+  secret_values: prohibited
+  developer_identity: prohibited
+outcome_classes:
+  CI:
+    - prevented_before_merge
+    - detected_in_CI
+    - escaped_detection
+    - rule_not_evaluated
+    - evaluation_incomplete
+  LSP:
+    - diagnostic_shown
+    - diagnostic_accepted
+    - diagnostic_dismissed
+    - confirmed_false_positive
+    - quick_fix_applied
+    - quick_fix_reverted
+    - rule_not_evaluated
+    - evaluation_incomplete
+  repair:
+    - repair_succeeded
+    - repair_failed
+    - repair_partial
+    - repair_rolled_back
+    - outcome_unknown
+unknown_semantics:
+  rules:
+    - Missing outcomes remain unknown.
+    - Incomplete evaluation is not PASS.
+    - Rule not evaluated is not rule success.
+    - Missing latency is not zero latency.
+    - Missing effort is not zero effort.
+deduplication:
+  identity:
+    algorithm: SHA-256
+    inputs:
+      - producer_id
+      - producer_contract
+      - event_id
+      - pack_id
+      - canonical_rule_id
+      - observation_scope
+  duplicate_behavior: one canonical observation
+measurement:
+  minimum_sample_sizes:
+    rule_recommendation: 20
+    pack_recommendation: 100
+  rule_metrics:
+    - evaluation_count
+    - known_outcome_count
+    - unknown_outcome_count
+    - prevention_count
+    - detection_count
+    - escape_count
+    - false_positive_count
+    - accepted_diagnostic_count
+    - dismissed_diagnostic_count
+    - quick_fix_applied_count
+    - quick_fix_reverted_count
+    - repair_success_count
+    - repair_failure_count
+    - prevention_ratio
+    - escape_ratio
+    - false_positive_ratio
+    - quick_fix_revert_ratio
+    - repair_success_ratio
+    - p95_latency_ms
+  pack_metrics:
+    - active_rule_count
+    - observed_rule_count
+    - evaluation_count
+    - prevention_ratio
+    - escape_ratio
+    - false_positive_ratio
+    - unknown_ratio
+    - p95_latency_ms
+    - coverage_ratio
+recommendations:
+  states:
+    - insufficient_evidence
+    - retain
+    - investigate
+    - rollback_recommended
+    - retirement_recommended
+  default_thresholds:
+    false_positive_ratio:
+      investigate: 0.05
+      rollback: 0.10
+      retirement: 0.20
+    escape_ratio:
+      investigate: 0.10
+      rollback: 0.20
+    quick_fix_revert_ratio:
+      investigate: 0.10
+      rollback: 0.25
+    unknown_ratio:
+      investigate: 0.25
+    p95_latency_ms:
+      LSP_investigate: 200
+      LSP_rollback: 1000
+  authority:
+    intelligence:
+      - calculate metrics
+      - detect drift
+      - recommend retention
+      - recommend investigation
+      - recommend rollback
+      - recommend retirement
+    core:
+      - select pack
+      - change policy mode
+      - perform CI rollback
+    LSP:
+      - activate explicit pack
+      - perform editor rollback
+    publication_maintainers:
+      - retire published pack
+drift:
+  comparisons:
+    - current pack against previous pack
+    - current period against baseline period
+  outputs:
+    - absolute_delta
+    - relative_delta
+    - regression_state
+  prohibition:
+    - comparing incompatible rule identities
+    - comparing different outcome definitions
+    - treating missing baseline as zero
+immutability:
+  - outcome observations are append-only
+  - corrections use correction events
+  - effectiveness reports are content-addressed
+  - recommendations identify exact evidence snapshots
+  - recommendation changes create new reports
+phase_7:
+  includes:
+    - canonical outcome events
+    - CI outcome ingestion
+    - LSP outcome ingestion
+    - repair outcome ingestion
+    - deterministic deduplication
+    - rule effectiveness measurement
+    - pack effectiveness measurement
+    - drift comparison
+    - rollback recommendations
+    - retirement recommendations
+    - effectiveness manifests
+  excludes:
+    - Core policy mutation
+    - LSP activation
+    - automatic rollback
+    - automatic retirement
+    - release deletion
+    - source repository mutation

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/corpus-retraction/v1",
+  "title": "L9 Intelligence Corpus Retraction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "retraction_id",
+    "target_record_id",
+    "reason",
+    "issued_at",
+    "issuer"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.corpus-retraction/v1"
+    },
+    "retraction_id": {
+      "type": "string",
+      "pattern": "^rt_[0-9a-f]{64}$"
+    },
+    "target_record_id": {
+      "type": "string",
+      "pattern": "^cr_[0-9a-f]{64}$"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "issuer": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

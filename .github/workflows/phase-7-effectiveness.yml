@@ -1,0 +1,91 @@
+name: Intelligence Phase 7 effectiveness
+on:
+  pull_request:
+    paths:
+      - ".l9/effectiveness-contract.yaml"
+      - "schemas/intelligence/**"
+      - "src/l9_debt_intelligence/effectiveness/**"
+      - "src/l9_debt_intelligence/cli.py"
+      - "tests/effectiveness/**"
+      - "tests/architecture/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".l9/effectiveness-contract.yaml"
+      - "schemas/intelligence/**"
+      - "src/l9_debt_intelligence/effectiveness/**"
+      - "src/l9_debt_intelligence/cli.py"
+      - "tests/effectiveness/**"
+      - "tests/architecture/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: intelligence-phase-7-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  effectiveness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout immutable revision
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install project
+        run: |
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            -e ".[dev]"
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            -r requirements/snapshot.txt \
+            -r requirements/publication.txt
+      - name: Run complete Phase 1–7 suite
+        run: |
+          python -m pytest \
+            tests/architecture \
+            tests/contracts \
+            tests/ingestion \
+            tests/snapshots \
+            tests/analytics \
+            tests/compilation \
+            tests/publication \
+            tests/effectiveness
+      - name: Exercise outcome ingestion
+        run: |
+          set -euo pipefail
+          store="$(mktemp -d)"
+          l9-intelligence ingest-effectiveness-outcome \
+            tests/fixtures/effectiveness/lsp-outcome.json \
+            --store-root "${store}" \
+            --output "${store}/lsp-result.json"
+          l9-intelligence ingest-effectiveness-outcome \
+            tests/fixtures/effectiveness/ci-outcome.json \
+            --store-root "${store}" \
+            --output "${store}/ci-result.json"
+          l9-intelligence ingest-effectiveness-outcome \
+            tests/fixtures/effectiveness/lsp-outcome.json \
+            --store-root "${store}" \
+            --output "${store}/duplicate-result.json"
+          python - "${store}" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          root = Path(sys.argv[1])
+          lsp = json.loads(
+              (root / "lsp-result.json").read_text()
+          )
+          ci = json.loads(
+              (root / "ci-result.json").read_text()
+          )
+          duplicate = json.loads(
+              (root / "duplicate-result.json").read_text()
+          )
+          assert lsp["status"] == "accepted", lsp
+          assert ci["status"] == "accepted", ci
+          assert duplicate["status"] == "duplicate", duplicate
+          PY

@@ -1,0 +1,137 @@
+schema: l9.intelligence-analytics-contract/v1
+metadata:
+  repository: Quantum-L9/l9-ci-debt-intelligence
+  phase: INTEL-P3
+  status: authoritative
+source:
+  required:
+    - verified immutable corpus snapshot
+    - l9.corpus-snapshot/v1 manifest
+    - immutable Parquet partitions
+  prohibited:
+    - mutable ingestion working state
+    - raw producer logs
+    - source repository checkout
+    - unverified working-tree output
+principles:
+  - Every report identifies its source snapshot.
+  - Unknown dimensions remain explicitly unknown.
+  - Missing values are never converted to zero.
+  - Arrival order does not influence analytical output.
+  - Report row order is deterministic.
+  - Metrics never silently exclude incompatible records.
+  - Analysis does not mutate corpus records or snapshots.
+  - Analysis results are derived and rebuildable.
+observation:
+  required_dimensions:
+    - record_id
+    - producer_id
+    - event_class
+    - producer_contract
+    - occurrence_scope
+    - recurrence_fingerprint
+  optional_dimensions:
+    - canonical_rule_id
+    - repository_identity
+    - component
+    - remediation_class
+    - effort_minutes
+    - validation_outcome
+    - recurrence_outcome
+    - false_positive_disposition
+    - pack_version
+  unknown_representation: null
+metrics:
+  recurrence:
+    grouping:
+      - recurrence_fingerprint
+      - event_class
+    outputs:
+      - occurrence_count
+      - distinct_scope_count
+      - distinct_producer_count
+      - first_scope
+      - last_scope
+  cooccurrence:
+    scope: occurrence_scope
+    grouping:
+      - left_fingerprint
+      - right_fingerprint
+    rules:
+      - pairs are unordered
+      - self-pairs are excluded
+      - duplicate fingerprints within one scope count once
+    outputs:
+      - shared_scope_count
+      - left_scope_count
+      - right_scope_count
+      - jaccard_ratio
+  effort:
+    unit: minutes
+    missing_behavior: explicit_unknown
+    outputs:
+      - known_observation_count
+      - unknown_observation_count
+      - total_minutes
+      - mean_minutes
+      - median_minutes
+      - p95_minutes
+  false_positive:
+    accepted_values:
+      - confirmed_false_positive
+      - confirmed_true_positive
+      - inconclusive
+    outputs:
+      - confirmed_false_positive_count
+      - confirmed_true_positive_count
+      - inconclusive_count
+      - unknown_count
+      - false_positive_ratio
+  repair_effectiveness:
+    accepted_validation_outcomes:
+      - passed
+      - failed
+      - partial
+      - unknown
+    outputs:
+      - attempt_count
+      - successful_count
+      - failed_count
+      - partial_count
+      - unknown_count
+      - success_ratio
+manifest:
+  identity:
+    algorithm: SHA-256
+    prefix: ar_
+    inputs:
+      - source_snapshot_id
+      - analytics_contract_version
+      - deterministic report hashes
+  required:
+    - analysis_run_id
+    - source_snapshot_id
+    - observation_count
+    - report_hashes
+    - deterministic_output_hash
+    - limitations
+phase_4:
+  includes:
+    - analytical observation projection
+    - recurrence metrics
+    - co-occurrence metrics
+    - effort metrics
+    - false-positive metrics
+    - repair-effectiveness metrics
+    - deterministic report manifests
+    - analytical verification
+  excludes:
+    - candidate-rule scoring
+    - leverage scoring
+    - generated invariants
+    - ast-grep compilation
+    - SDK contract compilation
+    - regression-fixture compilation
+    - defense-pack compilation
+    - signing
+    - publication

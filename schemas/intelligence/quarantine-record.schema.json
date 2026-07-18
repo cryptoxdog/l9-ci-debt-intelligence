@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/quarantine-record/v1",
+  "title": "L9 Intelligence Quarantine Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "quarantine_id",
+    "event_id",
+    "event_hash",
+    "producer_id",
+    "event_class",
+    "reason",
+    "observed_at",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.quarantine-record/v1"
+    },
+    "quarantine_id": {
+      "type": "string",
+      "pattern": "^qr_[0-9a-f]{64}$"
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "event_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "producer_id": {
+      "type": "string"
+    },
+    "event_class": {
+      "type": "string"
+    },
+    "reason": {
+      "enum": [
+        "invalid_schema",
+        "incompatible_schema_version",
+        "unknown_producer",
+        "incompatible_producer_contract",
+        "incompatible_sdk_contract",
+        "missing_lineage",
+        "sensitive_content",
+        "redaction_required",
+        "fingerprint_collision",
+        "malformed_event"
+      ]
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "event": {
+      "type": "object"
+    }
+  }
+}

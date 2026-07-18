@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/channel-index/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "channel",
+    "active",
+    "previous",
+    "history"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.defense-channel-index/v1"
+    },
+    "channel": {
+      "enum": [
+        "experimental",
+        "shadow",
+        "stable"
+      ]
+    },
+    "active": {
+      "$ref": "#/$defs/reference"
+    },
+    "previous": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/reference"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reference"
+      }
+    }
+  },
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pack_version",
+        "pack_id",
+        "archive_sha256",
+        "signature",
+        "publication_manifest"
+      ],
+      "properties": {
+        "pack_version": {
+          "type": "string"
+        },
+        "pack_id": {
+          "type": "string"
+        },
+        "archive_sha256": {
+          "type": "string"
+        },
+        "signature": {
+          "type": "string"
+        },
+        "publication_manifest": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

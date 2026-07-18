@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/snapshot-verification/v1",
+  "title": "L9 Intelligence Snapshot Verification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "snapshot_id",
+    "record_count",
+    "partition_count",
+    "verified_partition_count",
+    "deterministic_output_hash"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.snapshot-verification/v1"
+    },
+    "status": {
+      "const": "valid"
+    },
+    "snapshot_id": {
+      "type": "string",
+      "pattern": "^cs_[0-9a-f]{64}$"
+    },
+    "record_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "partition_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "verified_partition_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "deterministic_output_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

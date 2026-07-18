@@ -1,0 +1,118 @@
+name: Intelligence Phase 4 analytics
+on:
+  pull_request:
+    paths:
+      - ".l9/analytics-contract.yaml"
+      - "schemas/intelligence/**"
+      - "src/l9_debt_intelligence/analytics/**"
+      - "src/l9_debt_intelligence/cli.py"
+      - "tests/analytics/**"
+      - "tests/architecture/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".l9/analytics-contract.yaml"
+      - "schemas/intelligence/**"
+      - "src/l9_debt_intelligence/analytics/**"
+      - "src/l9_debt_intelligence/cli.py"
+      - "tests/analytics/**"
+      - "tests/architecture/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: intelligence-phase-4-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  analytics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout immutable event revision
+        env:
+          REPOSITORY: ${{ github.repository }}
+          REVISION: ${{ github.sha }}
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin \
+            "https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git"
+          git -c protocol.version=2 fetch --depth=1 origin "${REVISION}"
+          git checkout --detach FETCH_HEAD
+          git remote set-url origin \
+            "https://github.com/${REPOSITORY}.git"
+      - name: Install project
+        run: |
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            -e ".[dev]"
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            -r requirements/snapshot.txt
+      - name: Run complete Phase 1–4 suite
+        run: |
+          python -m pytest \
+            tests/architecture \
+            tests/contracts \
+            tests/ingestion \
+            tests/snapshots \
+            tests/analytics
+      - name: Exercise analytical lifecycle
+        run: |
+          set -euo pipefail
+          workspace="$(mktemp -d)"
+          ingestion="${workspace}/ingestion"
+          snapshots="${workspace}/snapshots"
+          analytics="${workspace}/analytics"
+          l9-intelligence ingest-event \
+            tests/fixtures/producers/valid-core-gate.json \
+            --storage-root "${ingestion}"
+          l9-intelligence build-snapshot \
+            --storage-root "${ingestion}" \
+            --snapshots-root "${snapshots}" \
+            --output "${workspace}/snapshot.json"
+          snapshot_id="$(
+            python - "${workspace}/snapshot.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          print(
+              json.loads(
+                  Path(sys.argv[1]).read_text()
+              )["snapshot_id"]
+          )
+          PY
+          )"
+          l9-intelligence build-analytics \
+            "${snapshots}/${snapshot_id}" \
+            --analytics-root "${analytics}" \
+            --output "${workspace}/analysis.json"
+          analysis_path="$(
+            python - "${workspace}/analysis.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          print(
+              json.loads(
+                  Path(sys.argv[1]).read_text()
+              )["analysis_path"]
+          )
+          PY
+          )"
+          l9-intelligence verify-analytics \
+            "${analysis_path}" \
+            --output "${workspace}/verification.json"
+          python - "${workspace}/verification.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          value = json.loads(
+              Path(sys.argv[1]).read_text()
+          )
+          assert value["status"] == "valid", value
+          assert value["verified_report_count"] == 4, value
+          PY

@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/cooccurrence-matrix/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_snapshot_id",
+    "rows",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.cooccurrence-matrix/v1"
+    },
+    "source_snapshot_id": {
+      "type": "string",
+      "pattern": "^cs_[0-9a-f]{64}$"
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "left_fingerprint",
+          "right_fingerprint",
+          "shared_scope_count",
+          "left_scope_count",
+          "right_scope_count",
+          "jaccard_ratio"
+        ],
+        "properties": {
+          "left_fingerprint": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "right_fingerprint": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "shared_scope_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "left_scope_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "right_scope_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "jaccard_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

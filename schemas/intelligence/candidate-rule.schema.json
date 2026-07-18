@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/candidate-rule/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "source_snapshot_id",
+    "analysis_run_id",
+    "candidate_kind",
+    "recurrence_fingerprint",
+    "title",
+    "rationale",
+    "match_contract",
+    "action_contract",
+    "score",
+    "score_components",
+    "state",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.candidate-rule/v1"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^candidate_[0-9a-f]{64}$"
+    },
+    "source_snapshot_id": {
+      "type": "string",
+      "pattern": "^cs_[0-9a-f]{64}$"
+    },
+    "analysis_run_id": {
+      "type": "string",
+      "pattern": "^ar_[0-9a-f]{64}$"
+    },
+    "candidate_kind": {
+      "enum": [
+        "ast_grep",
+        "sdk_architecture_contract",
+        "generated_invariant"
+      ]
+    },
+    "recurrence_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "match_contract": {
+      "type": "object"
+    },
+    "action_contract": {
+      "type": "object"
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "score_components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recurrence",
+        "scope_breadth",
+        "effort",
+        "repair_success",
+        "false_positive_safety"
+      ],
+      "properties": {
+        "recurrence": {"type": "number", "minimum": 0, "maximum": 5},
+        "scope_breadth": {"type": "number", "minimum": 0, "maximum": 5},
+        "effort": {"type": "number", "minimum": 0, "maximum": 5},
+        "repair_success": {"type": "number", "minimum": 0, "maximum": 5},
+        "false_positive_safety": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5
+        }
+      }
+    },
+    "state": {
+      "enum": [
+        "deferred",
+        "compiled_candidate",
+        "promotion_eligible"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    }
+  }
+}

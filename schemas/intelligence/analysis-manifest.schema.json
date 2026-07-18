@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/analysis-manifest/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "analysis_run_id",
+    "source_snapshot_id",
+    "observation_count",
+    "report_hashes",
+    "deterministic_output_hash",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.analysis-manifest/v1"
+    },
+    "analysis_run_id": {
+      "type": "string",
+      "pattern": "^ar_[0-9a-f]{64}$"
+    },
+    "source_snapshot_id": {
+      "type": "string",
+      "pattern": "^cs_[0-9a-f]{64}$"
+    },
+    "observation_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "report_hashes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "deterministic_output_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

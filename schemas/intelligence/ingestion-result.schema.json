@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/ingestion-result/v1",
+  "title": "L9 Intelligence Ingestion Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "event_id",
+    "event_hash",
+    "observation_id",
+    "ledger_sequence",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.ingestion-result/v1"
+    },
+    "status": {
+      "enum": [
+        "accepted",
+        "duplicate",
+        "quarantined",
+        "rejected"
+      ]
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "event_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "record_id": {
+      "type": ["string", "null"],
+      "pattern": "^cr_[0-9a-f]{64}$"
+    },
+    "quarantine_id": {
+      "type": ["string", "null"],
+      "pattern": "^qr_[0-9a-f]{64}$"
+    },
+    "observation_id": {
+      "type": "string",
+      "pattern": "^obs_[0-9a-f]{64}$"
+    },
+    "ledger_sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

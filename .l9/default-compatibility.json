@@ -1,0 +1,22 @@
+{
+  "schema_version": "l9.defense-compatibility/v1",
+  "sdk": {
+    "contract": "l9.integration-contract/v1",
+    "minimum_version": "0.1.0",
+    "maximum_version_exclusive": "2.0.0"
+  },
+  "core": {
+    "minimum_contract": "l9.core-defense-consumer/v1"
+  },
+  "lsp": {
+    "minimum_contract": "l9.lsp-defense-consumer/v1"
+  },
+  "platforms": [
+    "linux-x86_64",
+    "linux-arm64",
+    "darwin-x86_64",
+    "darwin-arm64",
+    "windows-x86_64"
+  ],
+  "limitations": []
+}

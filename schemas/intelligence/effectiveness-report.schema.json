@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/effectiveness-report/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "report_id",
+    "outcome_snapshot_hash",
+    "pack_id",
+    "pack_version",
+    "observation_count",
+    "rule_metrics",
+    "pack_metrics",
+    "recommendations",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.effectiveness-report/v1"
+    },
+    "report_id": {
+      "type": "string",
+      "pattern": "^effect_[0-9a-f]{64}$"
+    },
+    "outcome_snapshot_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "pack_id": {
+      "type": "string",
+      "pattern": "^pack_[0-9a-f]{64}$"
+    },
+    "pack_version": {
+      "type": "string"
+    },
+    "observation_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "rule_metrics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ruleMetric"
+      }
+    },
+    "pack_metrics": {
+      "type": "object"
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/recommendation"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "ruleMetric": {
+      "type": "object",
+      "required": [
+        "canonical_rule_id",
+        "evaluation_count",
+        "known_outcome_count",
+        "unknown_outcome_count",
+        "prevention_count",
+        "detection_count",
+        "escape_count",
+        "false_positive_count",
+        "quick_fix_applied_count",
+        "quick_fix_reverted_count",
+        "repair_success_count",
+        "repair_failure_count",
+        "prevention_ratio",
+        "escape_ratio",
+        "false_positive_ratio",
+        "quick_fix_revert_ratio",
+        "repair_success_ratio",
+        "p95_latency_ms"
+      ]
+    },
+    "recommendation": {
+      "type": "object",
+      "required": [
+        "scope",
+        "identity",
+        "state",
+        "reasons",
+        "evidence"
+      ],
+      "properties": {
+        "scope": {
+          "enum": [
+            "rule",
+            "pack"
+          ]
+        },
+        "identity": {
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "insufficient_evidence",
+            "retain",
+            "investigate",
+            "rollback_recommended",
+            "retirement_recommended"
+          ]
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

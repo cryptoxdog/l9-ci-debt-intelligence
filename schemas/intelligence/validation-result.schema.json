@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/validation-result/v1",
+  "title": "L9 Intelligence Validation Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "event_id",
+    "producer_id",
+    "event_class",
+    "event_hash",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.intelligence-validation-result/v1"
+    },
+    "status": {
+      "enum": ["accepted", "quarantined", "rejected"]
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "producer_id": {
+      "type": "string"
+    },
+    "event_class": {
+      "type": "string"
+    },
+    "event_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "quarantine_reason": {
+      "type": ["string", "null"]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

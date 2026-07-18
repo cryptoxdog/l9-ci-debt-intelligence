@@ -1,0 +1,60 @@
+name: Intelligence Phase 6 publication
+on:
+  pull_request:
+    paths:
+      - ".l9/publication-contract.yaml"
+      - ".l9/default-compatibility.json"
+      - "requirements/publication.txt"
+      - "schemas/intelligence/**"
+      - "src/l9_debt_intelligence/publication/**"
+      - "src/l9_debt_intelligence/cli.py"
+      - "tests/publication/**"
+      - "tests/architecture/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".l9/publication-contract.yaml"
+      - ".l9/default-compatibility.json"
+      - "requirements/publication.txt"
+      - "schemas/intelligence/**"
+      - "src/l9_debt_intelligence/publication/**"
+      - "src/l9_debt_intelligence/cli.py"
+      - "tests/publication/**"
+      - "tests/architecture/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: intelligence-phase-6-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  publication-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout immutable revision
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install project
+        run: |
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            -e ".[dev]"
+          python -m pip install \
+            --disable-pip-version-check \
+            --no-input \
+            -r requirements/snapshot.txt \
+            -r requirements/publication.txt
+      - name: Run complete Phase 1–6 suite
+        run: |
+          python -m pytest \
+            tests/architecture \
+            tests/contracts \
+            tests/ingestion \
+            tests/snapshots \
+            tests/analytics \
+            tests/compilation \
+            tests/publication

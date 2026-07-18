@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/compiler-manifest/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "compilation_id",
+    "compiler_version",
+    "source_snapshot_id",
+    "analysis_run_id",
+    "candidate_count",
+    "compiled_candidate_count",
+    "promotion_eligible_count",
+    "artifact_hashes",
+    "regression_summary",
+    "deterministic_output_hash",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.compiler-manifest/v1"
+    },
+    "compilation_id": {
+      "type": "string",
+      "pattern": "^compile_[0-9a-f]{64}$"
+    },
+    "compiler_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_snapshot_id": {
+      "type": "string",
+      "pattern": "^cs_[0-9a-f]{64}$"
+    },
+    "analysis_run_id": {
+      "type": "string",
+      "pattern": "^ar_[0-9a-f]{64}$"
+    },
+    "candidate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "compiled_candidate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "promotion_eligible_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "artifact_hashes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      }
+    },
+    "regression_summary": {
+      "type": "object",
+      "required": [
+        "fixture_count",
+        "passed",
+        "failed"
+      ]
+    },
+    "deterministic_output_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    }
+  }
+}

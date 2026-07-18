@@ -1,0 +1,104 @@
+schema: l9.intelligence-ingestion-contract/v1
+metadata:
+  repository: Quantum-L9/l9-ci-debt-intelligence
+  phase: INTEL-P1
+  status: authoritative
+pipeline:
+  - receive
+  - validate_envelope
+  - validate_producer_compatibility
+  - inspect_redaction
+  - normalize
+  - calculate_identity
+  - deduplicate
+  - append_ledger
+  - persist_record_or_quarantine
+determinism:
+  canonical_serialization:
+    encoding: UTF-8
+    object_keys: lexicographic
+    whitespace: none
+    floating_point_nan: prohibited
+  record_identity:
+    algorithm: SHA-256
+    prefix: cr_
+    inputs:
+      - producer_id
+      - producer_contract
+      - event_class
+      - snapshot_or_run_id
+      - normalized_payload_hash
+  duplicate_rule: >
+    Events with the same deterministic record identity resolve to the same
+    corpus record and create a duplicate-observation ledger entry.
+storage:
+  phase_1_backend: local-filesystem
+  authority: bootstrap-only
+  layout:
+    ledger: var/intelligence/ledger/events.jsonl
+    accepted: var/intelligence/records
+    quarantine: var/intelligence/quarantine
+    indexes: var/intelligence/indexes
+  future_target:
+    raw_events: versioned-object-storage
+    normalized_records: Parquet
+    analytics: DuckDB
+  rule: >
+    The bootstrap filesystem backend implements the protocol but is not the
+    final authoritative fleet storage architecture.
+redaction:
+  prohibited_content:
+    - secret values
+    - private keys
+    - authorization headers
+    - access tokens
+    - passwords
+    - absolute filesystem paths
+    - unredacted raw logs
+  behavior:
+    safe: continue
+    suspected_sensitive_content: quarantine
+    explicitly_unredacted: quarantine
+  source_content_default: excluded
+quarantine:
+  reasons:
+    - invalid_schema
+    - incompatible_schema_version
+    - unknown_producer
+    - incompatible_producer_contract
+    - incompatible_sdk_contract
+    - missing_lineage
+    - sensitive_content
+    - redaction_required
+    - fingerprint_collision
+    - malformed_event
+  invariants:
+    - quarantine records preserve the original event hash
+    - quarantine records contain no fabricated replacement fields
+    - quarantine does not create an accepted corpus record
+    - repeated quarantine observations are idempotent
+corrections:
+  behavior: append-only
+  prohibited:
+    - silent record overwrite
+    - in-place historical mutation
+    - deletion without retraction event
+phase_2:
+  includes:
+    - deterministic normalization
+    - content-addressed record identity
+    - append-only ingestion ledger
+    - accepted record persistence
+    - quarantine persistence
+    - redaction inspection
+    - deterministic duplicate handling
+    - ingestion CLI
+  excludes:
+    - Parquet corpus snapshots
+    - DuckDB analytics
+    - recurrence analysis
+    - co-occurrence analysis
+    - effort modelling
+    - candidate rule generation
+    - defense-pack compilation
+    - artifact signing

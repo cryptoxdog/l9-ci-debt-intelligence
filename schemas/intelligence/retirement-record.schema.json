@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/retirement-record/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "retirement_id",
+    "pack_version",
+    "pack_id",
+    "pack_sha256",
+    "reason",
+    "replacement_version",
+    "retired_at",
+    "issuer"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.defense-retirement/v1"
+    },
+    "retirement_id": {
+      "type": "string",
+      "pattern": "^retire_[0-9a-f]{64}$"
+    },
+    "pack_version": {
+      "type": "string"
+    },
+    "pack_id": {
+      "type": "string"
+    },
+    "pack_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "replacement_version": {
+      "type": ["string", "null"]
+    },
+    "retired_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "issuer": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

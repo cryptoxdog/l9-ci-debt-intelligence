@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/corpus-record/v1",
+  "title": "L9 Intelligence Corpus Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_id",
+    "source_event_id",
+    "producer_id",
+    "event_class",
+    "lifecycle_state",
+    "redaction_status",
+    "payload_reference",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.corpus-record/v1"
+    },
+    "record_id": {
+      "type": "string",
+      "pattern": "^cr_[0-9a-f]{64}$"
+    },
+    "source_event_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "producer_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_class": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lifecycle_state": {
+      "enum": [
+        "RECEIVED",
+        "SCHEMA_VALIDATED",
+        "REDACTED",
+        "NORMALIZED",
+        "DEDUPLICATED",
+        "CURATED",
+        "QUARANTINED",
+        "REJECTED",
+        "CORRECTED",
+        "RETRACTED"
+      ]
+    },
+    "redaction_status": {
+      "type": "string",
+      "minLength": 1
+    },
+    "payload_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["producer_contract", "content_hash"],
+      "properties": {
+        "producer_contract": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sdk_schema_references": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "l9://sdk/source-location/v1",
+              "l9://sdk/evidence/v1",
+              "l9://sdk/finding/v1",
+              "l9://sdk/snapshot/v1",
+              "l9://sdk/validation-result/v1",
+              "l9://sdk/coverage/v1"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "content_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "superseded_by": {
+      "type": ["string", "null"]
+    }
+  }
+}

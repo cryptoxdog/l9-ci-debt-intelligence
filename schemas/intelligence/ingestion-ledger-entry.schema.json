@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "l9://intelligence/ingestion-ledger-entry/v1",
+  "title": "L9 Intelligence Ingestion Ledger Entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "sequence",
+    "observation_id",
+    "event_id",
+    "event_hash",
+    "producer_id",
+    "event_class",
+    "disposition",
+    "observed_at",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "l9.ingestion-ledger-entry/v1"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "observation_id": {
+      "type": "string",
+      "pattern": "^obs_[0-9a-f]{64}$"
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "producer_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_class": {
+      "type": "string",
+      "minLength": 1
+    },
+    "record_id": {
+      "type": ["string", "null"],
+      "pattern": "^cr_[0-9a-f]{64}$"
+    },
+    "disposition": {
+      "enum": [
+        "accepted",
+        "duplicate",
+        "quarantined",
+        "rejected"
+      ]
+    },
+    "quarantine_reason": {
+      "type": ["string", "null"]
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

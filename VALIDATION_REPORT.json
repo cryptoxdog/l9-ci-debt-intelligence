@@ -1,0 +1,33 @@
+{
+  "file_count": 197,
+  "integrated_phases": [
+    "INTEL-P0",
+    "INTEL-P1",
+    "INTEL-P2",
+    "INTEL-P3",
+    "INTEL-P4",
+    "INTEL-P5",
+    "INTEL-P6"
+  ],
+  "integration_corrections": [
+    "Read manifest-listed Parquet files directly to avoid Hive partition-column collisions.",
+    "Scoped the Phase 1 SDK schema-federation test to Phase 1 base contracts so later extension schemas may reference canonical identifiers without redefining SDK contracts.",
+    "Enabled pytest importlib mode to prevent duplicate test-module basename collisions.",
+    "Declared snapshot and publication runtime dependencies in pyproject.toml."
+  ],
+  "repository": "Quantum-L9/l9-ci-debt-intelligence",
+  "schema": "l9.repository-validation-report/v1",
+  "source_phase_dumps_preserved": true,
+  "validation": {
+    "json_parse": "passed",
+    "pytest": {
+      "status": "passed",
+      "subtests": 22,
+      "tests": 64
+    },
+    "python_compile": "passed",
+    "ruff_check": "passed",
+    "ruff_format": "passed",
+    "yaml_parse": "passed"
+  }
+}
