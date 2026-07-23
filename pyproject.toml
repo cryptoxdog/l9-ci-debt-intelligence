@@ -7,6 +7,7 @@ name = "l9-ci-debt-intelligence"
 version = "0.2.0"
 description = "Fleet learning and prevention artifact compiler for the L9 CI constellation"
 requires-python = ">=3.11"
+license = { text = "Proprietary" }
 dependencies = [
   "jsonschema>=4.23,<5",
   "pydantic>=2.8,<3",
